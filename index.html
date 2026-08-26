@@ -116,6 +116,63 @@
   }
   .checkbox-row input { width: 18px; height: 18px; }
   .checkbox-row label { margin: 0; font-size: 14px; font-weight: 400; color: var(--tg-theme-text-color, #111111); }
+
+  .calendar-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px dashed var(--tg-theme-button-color, #2481cc);
+    background: transparent;
+    color: var(--tg-theme-button-color, #2481cc);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 16px;
+  }
+  .calendar-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .price-calendar {
+    display: none;
+    margin-bottom: 16px;
+    border: 1px solid var(--tg-theme-hint-color, #dddddd);
+    border-radius: 10px;
+    padding: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .price-calendar.open { display: block; }
+  .price-calendar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tg-theme-hint-color, #666666);
+    margin-bottom: 8px;
+  }
+  .price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .price-row:hover {
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  }
+  .price-row.cheapest {
+    background: rgba(76, 175, 80, 0.15);
+    font-weight: 700;
+  }
+  .price-row .price-tag {
+    font-variant-numeric: tabular-nums;
+  }
+  .calendar-status {
+    font-size: 13px;
+    color: var(--tg-theme-hint-color, #888888);
+    padding: 8px 4px;
+  }
 </style>
 </head>
 <body>
@@ -153,6 +210,11 @@
     <label for="one-way">Solo ida (sin vuelta)</label>
   </div>
 
+  <button type="button" class="calendar-btn" id="calendar-btn">
+    📅 Ver precios de todo el mes de ida
+  </button>
+  <div class="price-calendar" id="price-calendar"></div>
+
   <div class="field">
     <label for="max-price">Avisarme si baja de (opcional, USD)</label>
     <input type="number" id="max-price" placeholder="Ej: 450" min="0" step="1">
@@ -164,6 +226,14 @@
   const tg = window.Telegram.WebApp;
   tg.ready();
   tg.expand();
+
+  // --- Configuración de la API de precios (calendario) ---
+  // ADVERTENCIA DE SEGURIDAD: este token queda visible en el código fuente
+  // de esta página para cualquiera que la abra (F12 -> código fuente).
+  // Es un riesgo bajo (solo permite consultar precios, no controla tu bot
+  // ni tu cuenta), pero no es tan seguro como mantenerlo solo en el bot de
+  // Python. Pega aquí el mismo token que usas en config.py.
+  const TRAVELPAYOUTS_TOKEN = "5fa0b152106f4dde8be2f1326dee3396";
 
   // --- Base de datos local de aeropuertos (misma lista que airports.py del bot) ---
   const AIRPORTS = [
@@ -332,6 +402,115 @@
       max_price: maxPrice ? parseFloat(maxPrice) : null,
     };
   }
+
+  // --- Calendario de precios (consulta directa a Travelpayouts desde el navegador) ---
+  async function fetchPriceCalendar(origin, destination, month, returnDate) {
+    const params = new URLSearchParams({
+      origin,
+      destination,
+      depart_date: month,
+      calendar_type: 'departure_date',
+      currency: 'usd',
+      token: TRAVELPAYOUTS_TOKEN,
+    });
+    if (returnDate) params.set('return_date', returnDate);
+
+    const url = `https://api.travelpayouts.com/v1/prices/calendar?${params.toString()}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const payload = await resp.json();
+    if (!payload.success) return [];
+
+    const data = payload.data || {};
+    const results = [];
+    for (const [dateStr, info] of Object.entries(data)) {
+      if (info && typeof info === 'object' && 'price' in info) {
+        results.push({ date: dateStr, price: parseFloat(info.price) });
+      } else if (info && typeof info === 'object' && info[destination.toUpperCase()]) {
+        const nested = info[destination.toUpperCase()];
+        if (nested && 'price' in nested) {
+          results.push({ date: dateStr, price: parseFloat(nested.price) });
+        }
+      }
+    }
+    results.sort((a, b) => a.date.localeCompare(b.date));
+    return results;
+  }
+
+  const calendarBtn = document.getElementById('calendar-btn');
+  const calendarBox = document.getElementById('price-calendar');
+
+  calendarBtn.addEventListener('click', async () => {
+    const origin = getAirportCode('origin');
+    const destination = getAirportCode('destination');
+    const departDate = document.getElementById('depart-date').value;
+
+    if (!origin || !destination) {
+      showError('Elige origen y destino antes de ver el calendario de precios.');
+      return;
+    }
+    if (!departDate) {
+      showError('Elige una fecha de ida (el mes de esa fecha es lo que se consulta).');
+      return;
+    }
+    if (TRAVELPAYOUTS_TOKEN === 'TU_TOKEN_DE_TRAVELPAYOUTS') {
+      showError('Falta configurar el token de Travelpayouts en este archivo (ver comentario en el código).');
+      return;
+    }
+    clearError();
+
+    const month = departDate.slice(0, 7); // "2026-12-05" -> "2026-12"
+    const returnDate = (!oneWayCheckbox.checked) ? document.getElementById('return-date').value : null;
+
+    calendarBtn.disabled = true;
+    calendarBtn.textContent = '📅 Consultando precios...';
+    calendarBox.classList.add('open');
+    calendarBox.innerHTML = '<div class="calendar-status">Consultando calendario de precios...</div>';
+
+    try {
+      const results = await fetchPriceCalendar(origin, destination, month, returnDate);
+
+      if (results.length === 0) {
+        calendarBox.innerHTML = '<div class="calendar-status">No encontré precios en caché para ese mes/ruta. Prueba otro mes.</div>';
+        return;
+      }
+
+      const cheapest = results.reduce((a, b) => (a.price < b.price ? a : b));
+      const title = returnDate
+        ? `Precios de ida (vuelta fija ${returnDate})`
+        : 'Precios de solo ida';
+
+      let html = `<div class="price-calendar-title">${title} — ${month}</div>`;
+      for (const row of results) {
+        const day = row.date.slice(-2);
+        const isCheapest = row.date === cheapest.date;
+        html += `
+          <div class="price-row ${isCheapest ? 'cheapest' : ''}" data-date="${row.date}">
+            <span>Día ${day}${isCheapest ? ' 🟢' : ''}</span>
+            <span class="price-tag">$${row.price.toFixed(0)}</span>
+          </div>`;
+      }
+      calendarBox.innerHTML = html;
+
+      // Tocar un día del calendario lo selecciona como fecha de ida
+      calendarBox.querySelectorAll('.price-row').forEach((row) => {
+        row.addEventListener('click', () => {
+          document.getElementById('depart-date').value = row.dataset.date;
+          if (!oneWayCheckbox.checked) {
+            document.getElementById('return-date').min = row.dataset.date;
+          }
+        });
+      });
+    } catch (err) {
+      const isCors = err instanceof TypeError; // fetch lanza TypeError en fallos de red/CORS
+      calendarBox.innerHTML = isCors
+        ? '<div class="calendar-status">⚠️ El navegador bloqueó la consulta (posible restricción CORS de Travelpayouts). Usa /calendario en el bot de Telegram en su lugar.</div>'
+        : `<div class="calendar-status">⚠️ Error consultando precios: ${err.message}</div>`;
+    } finally {
+      calendarBtn.disabled = false;
+      calendarBtn.textContent = '📅 Ver precios de todo el mes de ida';
+    }
+  });
 
   // Botón principal de Telegram (aparece abajo, fuera del webview)
   tg.MainButton.setText('Buscar vuelo');
