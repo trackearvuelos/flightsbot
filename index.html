@@ -190,6 +190,18 @@
     color: var(--tg-theme-hint-color, #888888);
     padding: 8px 4px;
   }
+  .book-link {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--tg-theme-button-color, #2481cc);
+    color: var(--tg-theme-button-text-color, #ffffff) !important;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+  }
 </style>
 </head>
 <body>
@@ -253,6 +265,31 @@
   // Ya NO ponemos el token de Travelpayouts aquí — vive seguro en el Worker.
   // Pega aquí la URL de tu Worker desplegado (ver webapp/calendar-proxy-worker.js).
   const CALENDAR_PROXY_URL = "https://flightsprices.duardipr.workers.dev";
+
+  // Tu marker de afiliado de Travelpayouts (el mismo que usas en config.py
+  // del bot, dentro de TRAVELPAYOUTS_MARKER). Mientras esté vacío o con el
+  // placeholder, el link funciona igual mostrando resultados, solo que no
+  // genera comisión.
+  const TRAVELPAYOUTS_MARKER = "TU_MARKER_DE_AFILIADO";
+
+  // Arma el link de búsqueda de Aviasales con el formato correcto:
+  // /search/ORIGEN + DDMM(ida) + DESTINO + [DDMM(vuelta)] + PASAJEROS
+  // (mismo formato que build_affiliate_link() en bot.py)
+  function buildAffiliateLink(origin, destination, departDate, returnDate) {
+    try {
+      const [dy, dm, dd] = departDate.split('-');
+      const departDDMM = `${dd}${dm}`;
+      let returnDDMM = '';
+      if (returnDate) {
+        const [ry, rm, rd] = returnDate.split('-');
+        returnDDMM = `${rd}${rm}`;
+      }
+      const path = `${origin.toUpperCase()}${departDDMM}${destination.toUpperCase()}${returnDDMM}1`;
+      return `https://www.aviasales.com/search/${path}?marker=${TRAVELPAYOUTS_MARKER}`;
+    } catch (e) {
+      return null;
+    }
+  }
 
   // --- Base de datos local de aeropuertos (misma lista que airports.py del bot) ---
   const AIRPORTS = [
@@ -513,6 +550,8 @@
         ? '<div class="calendar-status">📅 Precio aproximado del mes (sin datos para el día exacto).</div>'
         : '';
       const tripLabel = returnDate ? `${departDate} → ${returnDate}` : `${departDate} (solo ida)`;
+      const link = buildAffiliateLink(origin, destination, departDate, returnDate);
+      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
 
       exactPriceBox.innerHTML = `
         <div class="price-calendar-title">${origin} → ${destination}, ${tripLabel}</div>
@@ -520,7 +559,8 @@
           <span>✈️ ${result.airline}</span>
           <span class="price-tag">$${result.price.toFixed(0)}</span>
         </div>
-        ${approxNote}`;
+        ${approxNote}
+        ${linkHtml}`;
     } catch (err) {
       exactPriceBox.innerHTML = `<div class="calendar-status">⚠️ Error consultando el precio: ${err.message}</div>`;
     } finally {
@@ -592,6 +632,8 @@
             const approxNote = exact.date_precision === 'month'
               ? '<div class="calendar-status">📅 Precio aproximado (no hay calendario completo para esta ruta, pero sí este dato).</div>'
               : '';
+            const link = buildAffiliateLink(origin, destination, departDate, returnDate);
+            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
             calendarBox.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${departDate}${returnDate ? ' → ' + returnDate : ' (solo ida)'}</div>
               <div class="price-row cheapest">
@@ -600,7 +642,8 @@
                   <span class="price-tag">$${exact.price.toFixed(0)}</span>
                 </div>
               </div>
-              ${approxNote}`;
+              ${approxNote}
+              ${linkHtml}`;
             return;
           }
         } catch (innerErr) {
