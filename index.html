@@ -482,7 +482,14 @@
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const payload = await resp.json();
-    if (!payload.success) return [];
+    if (!payload.success) {
+      // Propagamos la señal de rate_limited como propiedad del arreglo
+      // vacío, para que el llamador pueda distinguir "sin datos" de
+      // "hay que esperar" sin cambiar el tipo de retorno en todos lados.
+      const empty = [];
+      if (payload.rate_limited) empty.rate_limited = true;
+      return empty;
+    }
 
     const data = payload.data || {};
     const results = [];
@@ -628,13 +635,25 @@
       let results = await fetchPriceCalendar(origin, destination, month, fixedDate, calendarType);
       let usedMonth = month;
 
+      if (results.rate_limited) {
+        box.innerHTML = '<div class="calendar-status">⏳ Demasiadas consultas seguidas. Espera unos segundos y vuelve a intentar.</div>';
+        return;
+      }
+
       // Intento 2: rutas de bajo tráfico a veces no tienen caché para un
-      // mes específico. Probamos meses cercanos automáticamente.
+      // mes específico. Probamos meses cercanos automáticamente, con una
+      // pequeña pausa entre cada intento para no disparar el límite de
+      // peticiones de Travelpayouts (código 429/420).
       if (results.length === 0) {
         box.innerHTML = '<div class="calendar-status">Sin datos para ese mes, probando fechas cercanas...</div>';
         for (const offset of [1, -1, 2, -2]) {
+          await new Promise((r) => setTimeout(r, 300));
           const altMonth = shiftMonth(month, offset);
           const altResults = await fetchPriceCalendar(origin, destination, altMonth, fixedDate, calendarType);
+          if (altResults.rate_limited) {
+            box.innerHTML = '<div class="calendar-status">⏳ Demasiadas consultas seguidas. Espera unos segundos y vuelve a intentar.</div>';
+            return;
+          }
           if (altResults.length > 0) {
             results = altResults;
             usedMonth = altMonth;
