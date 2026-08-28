@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Buscar vuelo</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #111111);
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px 0;
+  }
+  p.subtitle {
+    margin: 0 0 20px 0;
+    color: var(--tg-theme-hint-color, #888888);
+    font-size: 14px;
+  }
+  .field {
+    margin-bottom: 16px;
+    position: relative;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--tg-theme-hint-color, #666666);
+  }
+  input[type="text"], input[type="date"], input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--tg-theme-hint-color, #dddddd);
+    background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    color: var(--tg-theme-text-color, #111111);
+    font-size: 16px;
+  }
+  input:focus {
+    outline: 2px solid var(--tg-theme-button-color, #2481cc);
+    outline-offset: -1px;
+  }
+  .swap-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .swap-row .field { flex: 1; margin-bottom: 0; }
+  .swap-btn {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--tg-theme-hint-color, #dddddd);
+    background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .row2 {
+    display: flex;
+    gap: 12px;
+  }
+  .row2 .field { flex: 1; }
+  .suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--tg-theme-bg-color, #ffffff);
+    border: 1px solid var(--tg-theme-hint-color, #dddddd);
+    border-radius: 10px;
+    margin-top: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+  }
+  .suggestions.open { display: block; }
+  .suggestion-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #eeeeee);
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover, .suggestion-item.active {
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  }
+  .suggestion-code {
+    font-weight: 700;
+    color: var(--tg-theme-link-color, #2481cc);
+    margin-right: 8px;
+  }
+  .error {
+    color: #e53935;
+    font-size: 13px;
+    margin-top: 6px;
+    display: none;
+  }
+  .error.show { display: block; }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .checkbox-row input { width: 18px; height: 18px; }
+  .checkbox-row label { margin: 0; font-size: 14px; font-weight: 400; color: var(--tg-theme-text-color, #111111); }
+
+  .calendar-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px dashed var(--tg-theme-button-color, #2481cc);
+    background: transparent;
+    color: var(--tg-theme-button-color, #2481cc);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 16px;
+  }
+  .calendar-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .price-calendar {
+    display: none;
+    margin-bottom: 16px;
+    border: 1px solid var(--tg-theme-hint-color, #dddddd);
+    border-radius: 10px;
+    padding: 12px;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+  .price-calendar.open { display: block; }
+  .price-calendar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tg-theme-hint-color, #666666);
+    margin-bottom: 8px;
+  }
+  .price-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .price-row:hover {
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  }
+  .price-row.cheapest {
+    background: rgba(76, 175, 80, 0.1);
+    font-weight: 700;
+  }
+  .price-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .price-row .price-tag {
+    font-variant-numeric: tabular-nums;
+  }
+  .price-bar-track {
+    width: 100%;
+    height: 8px;
+    background: var(--tg-theme-secondary-bg-color, #eeeeee);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .price-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  .calendar-status {
+    font-size: 13px;
+    color: var(--tg-theme-hint-color, #888888);
+    padding: 8px 4px;
+  }
+  .book-link {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--tg-theme-button-color, #2481cc);
+    color: var(--tg-theme-button-text-color, #ffffff) !important;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+  }
+  .month-grid-title {
+    text-align: center;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: var(--tg-theme-text-color, #111111);
+  }
+  .month-grid-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    color: var(--tg-theme-hint-color, #888888);
+    margin-bottom: 4px;
+  }
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .grid-cell {
+    text-align: center;
+    padding: 5px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .grid-cell.empty {
+    cursor: default;
+  }
+  .grid-cell.no-data {
+    cursor: default;
+  }
+  .grid-cell.cheapest-cell {
+    background: rgba(76, 175, 80, 0.12);
+  }
+  .grid-cell:not(.empty):not(.no-data):hover {
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  }
+  .grid-day-num {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tg-theme-text-color, #111111);
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    margin: 0 auto;
+    border-radius: 50%;
+  }
+  .grid-cell.no-data .grid-day-num {
+    color: var(--tg-theme-hint-color, #cccccc);
+    font-weight: 400;
+  }
+  .grid-cell.selected .grid-day-num {
+    background: var(--tg-theme-button-color, #2481cc);
+    color: #ffffff;
+  }
+  .grid-day-price {
+    font-size: 10px;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+</head>
+<body>
+
+  <h1>✈️ Buscar vuelo</h1>
+  <p class="subtitle">Escribe la ciudad, elige las fechas y te aviso si el precio baja.</p>
+
+  <div class="swap-row">
+    <div class="field">
+      <label for="origin">Origen</label>
+      <input type="text" id="origin" placeholder="Ej: San Juan" autocomplete="off">
+      <div class="suggestions" id="origin-suggestions"></div>
+    </div>
+    <button type="button" class="swap-btn" id="swap-btn" title="Intercambiar">⇄</button>
+    <div class="field">
+      <label for="destination">Destino</label>
+      <input type="text" id="destination" placeholder="Ej: Madrid" autocomplete="off">
+      <div class="suggestions" id="destination-suggestions"></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="field">
+      <label for="depart-date">Fecha de ida</label>
+      <input type="date" id="depart-date">
+    </div>
+    <div class="field">
+      <label for="return-date">Fecha de vuelta</label>
+      <input type="date" id="return-date">
+    </div>
+  </div>
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="one-way">
+    <label for="one-way">Solo ida (sin vuelta)</label>
+  </div>
+
+  <button type="button" class="calendar-btn" id="price-btn">
+    💰 Ver precio para estas fechas exactas
+  </button>
+  <div class="price-calendar" id="exact-price-box"></div>
+
+  <button type="button" class="calendar-btn" id="calendar-btn">
+    📅 Ver precios de todo el mes de ida
+  </button>
+  <div class="price-calendar" id="price-calendar"></div>
+
+  <div class="field">
+    <label for="max-price">Avisarme si baja de (opcional, USD)</label>
+    <input type="number" id="max-price" placeholder="Ej: 450" min="0" step="1">
+  </div>
+
+  <div class="error" id="error-msg"></div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // --- Servidor intermedio (Cloudflare Worker) para el calendario de precios ---
+  // Ya NO ponemos el token de Travelpayouts aquí — vive seguro en el Worker.
+  // Pega aquí la URL de tu Worker desplegado (ver webapp/calendar-proxy-worker.js).
+  const CALENDAR_PROXY_URL = "https://flightsprices.duardipr.workers.dev";
+
+  // Tu marker de afiliado de Travelpayouts (el mismo que usas en config.py
+  // del bot, dentro de TRAVELPAYOUTS_MARKER). Mientras esté vacío o con el
+  // placeholder, el link funciona igual mostrando resultados, solo que no
+  // genera comisión.
+  const TRAVELPAYOUTS_MARKER = "TU_MARKER_DE_AFILIADO";
+
+  // Arma el link de búsqueda de Aviasales con el formato correcto:
+  // /search/ORIGEN + DDMM(ida) + DESTINO + [DDMM(vuelta)] + PASAJEROS
+  // (mismo formato que build_affiliate_link() en bot.py)
+  function buildAffiliateLink(origin, destination, departDate, returnDate) {
+    try {
+      const [dy, dm, dd] = departDate.split('-');
+      const departDDMM = `${dd}${dm}`;
+      let returnDDMM = '';
+      if (returnDate) {
+        const [ry, rm, rd] = returnDate.split('-');
+        returnDDMM = `${rd}${rm}`;
+      }
+      const path = `${origin.toUpperCase()}${departDDMM}${destination.toUpperCase()}${returnDDMM}1`;
+      return `https://www.aviasales.com/search/${path}?marker=${TRAVELPAYOUTS_MARKER}`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // --- Base de datos local de aeropuertos (misma lista que airports.py del bot) ---
+  const AIRPORTS = [
+    ["SJU","San Juan","Puerto Rico"], ["BQN","Aguadilla","Puerto Rico"], ["PSE","Ponce","Puerto Rico"],
+    ["STT","St. Thomas","Islas Vírgenes EE.UU."], ["STX","St. Croix","Islas Vírgenes EE.UU."],
+    ["SDQ","Santo Domingo","República Dominicana"], ["PUJ","Punta Cana","República Dominicana"],
+    ["HAV","La Habana","Cuba"], ["MBJ","Montego Bay","Jamaica"], ["KIN","Kingston","Jamaica"],
+    ["NAS","Nassau","Bahamas"], ["AUA","Aruba / Oranjestad","Aruba"], ["CUR","Curazao","Curazao"],
+    ["SXM","Sint Maarten","Sint Maarten"],
+    ["JFK","Nueva York (JFK)","Estados Unidos"], ["LGA","Nueva York (LaGuardia)","Estados Unidos"],
+    ["EWR","Nueva York (Newark)","Estados Unidos"], ["MCO","Orlando","Estados Unidos"],
+    ["MIA","Miami","Estados Unidos"], ["FLL","Fort Lauderdale","Estados Unidos"],
+    ["TPA","Tampa","Estados Unidos"], ["LAX","Los Ángeles","Estados Unidos"],
+    ["SFO","San Francisco","Estados Unidos"], ["ORD","Chicago","Estados Unidos"],
+    ["ATL","Atlanta","Estados Unidos"], ["DFW","Dallas","Estados Unidos"],
+    ["IAH","Houston","Estados Unidos"], ["BOS","Boston","Estados Unidos"],
+    ["PHL","Filadelfia","Estados Unidos"], ["IAD","Washington D.C.","Estados Unidos"],
+    ["DCA","Washington D.C. (Reagan)","Estados Unidos"], ["LAS","Las Vegas","Estados Unidos"],
+    ["SEA","Seattle","Estados Unidos"], ["DEN","Denver","Estados Unidos"], ["PHX","Phoenix","Estados Unidos"],
+    ["MEX","Ciudad de México","México"], ["CUN","Cancún","México"], ["GDL","Guadalajara","México"],
+    ["SJO","San José","Costa Rica"], ["PTY","Panamá","Panamá"], ["GUA","Ciudad de Guatemala","Guatemala"],
+    ["SAL","San Salvador","El Salvador"], ["TGU","Tegucigalpa","Honduras"], ["MGA","Managua","Nicaragua"],
+    ["BZE","Belice","Belice"],
+    ["BOG","Bogotá","Colombia"], ["MDE","Medellín","Colombia"], ["CTG","Cartagena","Colombia"],
+    ["LIM","Lima","Perú"], ["UIO","Quito","Ecuador"], ["GYE","Guayaquil","Ecuador"],
+    ["CCS","Caracas","Venezuela"], ["EZE","Buenos Aires","Argentina"], ["AEP","Buenos Aires (Aeroparque)","Argentina"],
+    ["GRU","São Paulo","Brasil"], ["GIG","Río de Janeiro","Brasil"], ["SCL","Santiago","Chile"],
+    ["MVD","Montevideo","Uruguay"], ["ASU","Asunción","Paraguay"], ["LPB","La Paz","Bolivia"],
+    ["MAD","Madrid","España"], ["BCN","Barcelona","España"], ["LIS","Lisboa","Portugal"],
+    ["LHR","Londres (Heathrow)","Reino Unido"], ["LGW","Londres (Gatwick)","Reino Unido"],
+    ["CDG","París (CDG)","Francia"], ["ORY","París (Orly)","Francia"], ["FCO","Roma","Italia"],
+    ["MXP","Milán","Italia"], ["AMS","Ámsterdam","Países Bajos"], ["FRA","Fráncfort","Alemania"],
+    ["MUC","Múnich","Alemania"], ["BER","Berlín","Alemania"], ["ZRH","Zúrich","Suiza"],
+    ["VIE","Viena","Austria"], ["DUB","Dublín","Irlanda"], ["CPH","Copenhague","Dinamarca"],
+    ["ARN","Estocolmo","Suecia"], ["OSL","Oslo","Noruega"], ["ATH","Atenas","Grecia"],
+    ["IST","Estambul","Turquía"], ["WAW","Varsovia","Polonia"], ["PRG","Praga","Chequia"],
+    ["BRU","Bruselas","Bélgica"],
+    ["DXB","Dubái","Emiratos Árabes Unidos"], ["DOH","Doha","Catar"], ["NRT","Tokio (Narita)","Japón"],
+    ["HND","Tokio (Haneda)","Japón"], ["ICN","Seúl","Corea del Sur"], ["PVG","Shanghái","China"],
+    ["PEK","Pekín","China"], ["HKG","Hong Kong","Hong Kong"], ["SIN","Singapur","Singapur"],
+    ["BKK","Bangkok","Tailandia"], ["KUL","Kuala Lumpur","Malasia"], ["DEL","Nueva Delhi","India"],
+    ["BOM","Bombay/Mumbai","India"], ["SYD","Sídney","Australia"], ["MEL","Melbourne","Australia"],
+    ["AKL","Auckland","Nueva Zelanda"],
+    ["YYZ","Toronto","Canadá"], ["YVR","Vancouver","Canadá"], ["YUL","Montreal","Canadá"],
+    ["CAI","El Cairo","Egipto"], ["JNB","Johannesburgo","Sudáfrica"], ["CPT","Ciudad del Cabo","Sudáfrica"],
+    ["CMN","Casablanca","Marruecos"], ["LOS","Lagos","Nigeria"], ["NBO","Nairobi","Kenia"]
+  ];
+
+  function normalize(s) {
+    return s.toLowerCase()
+      .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
+      .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+  }
+
+  function searchAirports(query) {
+    const q = normalize(query.trim());
+    if (!q) return [];
+    return AIRPORTS.filter(([code, city, country]) =>
+      normalize(`${code} ${city} ${country}`).includes(q)
+    ).slice(0, 6);
+  }
+
+  function setupAutocomplete(inputId, suggestionsId) {
+    const input = document.getElementById(inputId);
+    const box = document.getElementById(suggestionsId);
+    let selectedCode = null;
+
+    input.addEventListener('input', () => {
+      selectedCode = null;
+      const results = searchAirports(input.value);
+      box.innerHTML = '';
+      if (results.length === 0) {
+        box.classList.remove('open');
+        return;
+      }
+      results.forEach(([code, city, country]) => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `<span class="suggestion-code">${code}</span>${city}, ${country}`;
+        item.addEventListener('click', () => {
+          input.value = `${city} (${code})`;
+          input.dataset.code = code;
+          box.classList.remove('open');
+        });
+        box.appendChild(item);
+      });
+      box.classList.add('open');
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => box.classList.remove('open'), 150);
+    });
+
+    input.addEventListener('focus', () => {
+      if (input.value) input.dispatchEvent(new Event('input'));
+    });
+  }
+
+  setupAutocomplete('origin', 'origin-suggestions');
+  setupAutocomplete('destination', 'destination-suggestions');
+
+  // Swap origen/destino
+  document.getElementById('swap-btn').addEventListener('click', () => {
+    const o = document.getElementById('origin');
+    const d = document.getElementById('destination');
+    const tmp = o.value; o.value = d.value; d.value = tmp;
+    const tmpCode = o.dataset.code; o.dataset.code = d.dataset.code; d.dataset.code = tmpCode;
+  });
+
+  // Fecha mínima = hoy
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('depart-date').min = today;
+  document.getElementById('return-date').min = today;
+  document.getElementById('depart-date').value = today;
+
+  document.getElementById('depart-date').addEventListener('change', (e) => {
+    document.getElementById('return-date').min = e.target.value;
+  });
+
+  // Checkbox "solo ida"
+  const oneWayCheckbox = document.getElementById('one-way');
+  const returnDateField = document.getElementById('return-date').closest('.field');
+  oneWayCheckbox.addEventListener('change', () => {
+    returnDateField.style.opacity = oneWayCheckbox.checked ? '0.4' : '1';
+    document.getElementById('return-date').disabled = oneWayCheckbox.checked;
+  });
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearError() {
+    document.getElementById('error-msg').classList.remove('show');
+  }
+
+  function getAirportCode(inputId) {
+    const input = document.getElementById(inputId);
+    if (input.dataset.code) return input.dataset.code;
+    // Si el usuario escribió el código de 3 letras directo, sin usar el autocompletado
+    const raw = input.value.trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(raw)) return raw;
+    return null;
+  }
+
+  function validateAndBuildPayload() {
+    clearError();
+    const origin = getAirportCode('origin');
+    const destination = getAirportCode('destination');
+    const departDate = document.getElementById('depart-date').value;
+    const returnDate = oneWayCheckbox.checked ? null : document.getElementById('return-date').value;
+    const maxPrice = document.getElementById('max-price').value;
+
+    if (!origin) { showError('Elige un origen válido de la lista de sugerencias.'); return null; }
+    if (!destination) { showError('Elige un destino válido de la lista de sugerencias.'); return null; }
+    if (origin === destination) { showError('El origen y el destino no pueden ser el mismo.'); return null; }
+    if (!departDate) { showError('Elige una fecha de ida.'); return null; }
+    if (!oneWayCheckbox.checked && !returnDate) { showError('Elige una fecha de vuelta, o marca "Solo ida".'); return null; }
+    if (returnDate && returnDate < departDate) { showError('La fecha de vuelta no puede ser antes que la de ida.'); return null; }
+
+    return {
+      origin,
+      destination,
+      depart_date: departDate,
+      return_date: returnDate || null,
+      max_price: maxPrice ? parseFloat(maxPrice) : null,
+    };
+  }
+
+  // --- Calendario de precios (vía el Worker que oculta el token) ---
+  // Suma/resta meses a un string "YYYY-MM", devolviendo otro "YYYY-MM".
+  function shiftMonth(monthStr, offset) {
+    const [y, m] = monthStr.split('-').map(Number);
+    const date = new Date(y, m - 1 + offset, 1);
+    const yy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    return `${yy}-${mm}`;
+  }
+
+  const MONTH_NAMES_ES = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+
+  // Construye el HTML de un calendario tipo cuadrícula (como Google Flights)
+  // para UN mes específico, con el precio debajo del número de cada día.
+  // Los días sin dato en caché se muestran atenuados y no clickeables.
+  function buildMonthGrid(results, monthStr, selectedDate, cheapestDate, colorFn, onDayClick) {
+    const [y, m] = monthStr.split('-').map(Number);
+    const priceMap = {};
+    for (const r of results) priceMap[r.date] = r.price;
+
+    const totalDays = new Date(y, m, 0).getDate();
+    const startWeekday = new Date(y, m - 1, 1).getDay(); // 0=domingo
+
+    let html = `<div class="month-grid-title">${MONTH_NAMES_ES[m - 1]} ${y}</div>`;
+    html += '<div class="month-grid-header">' +
+      ['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d) => `<div>${d}</div>`).join('') +
+      '</div>';
+    html += '<div class="month-grid">';
+
+    for (let i = 0; i < startWeekday; i++) {
+      html += '<div class="grid-cell empty"></div>';
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const price = priceMap[dateStr];
+      const hasData = price !== undefined;
+      const isSelected = dateStr === selectedDate;
+      const isCheapest = dateStr === cheapestDate;
+
+      const classes = ['grid-cell'];
+      if (!hasData) classes.push('no-data');
+      if (isCheapest) classes.push('cheapest-cell');
+      if (isSelected) classes.push('selected');
+
+      const priceColorStyle = hasData && !isSelected ? `style="color:${colorFn(price)}"` : '';
+
+      html += `<div class="${classes.join(' ')}" ${hasData ? `data-date="${dateStr}"` : ''}>
+        <div class="grid-day-num">${day}</div>
+        ${hasData ? `<div class="grid-day-price" ${priceColorStyle}>$${Math.round(price)}</div>` : ''}
+      </div>`;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // Engancha los clics de la cuadrícula ya insertada en el DOM.
+  function attachGridClickHandlers(container, onDayClick) {
+    container.querySelectorAll('.grid-cell[data-date]').forEach((cell) => {
+      cell.addEventListener('click', () => onDayClick(cell.dataset.date));
+    });
+  }
+
+  async function fetchPriceCalendar(origin, destination, month, fixedDate, calendarType) {
+    const params = new URLSearchParams({ origin, destination, month, calendar_type: calendarType || 'departure_date' });
+    if (fixedDate) params.set('fixed_date', fixedDate);
+
+    const url = `${CALENDAR_PROXY_URL}?${params.toString()}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const payload = await resp.json();
+    if (!payload.success) {
+      // Propagamos la señal de rate_limited como propiedad del arreglo
+      // vacío, para que el llamador pueda distinguir "sin datos" de
+      // "hay que esperar" sin cambiar el tipo de retorno en todos lados.
+      const empty = [];
+      if (payload.rate_limited) empty.rate_limited = true;
+      return empty;
+    }
+
+    const data = payload.data || {};
+    const results = [];
+    for (const [dateStr, info] of Object.entries(data)) {
+      if (info && typeof info === 'object' && 'price' in info) {
+        results.push({ date: dateStr, price: parseFloat(info.price) });
+      } else if (info && typeof info === 'object' && info[destination.toUpperCase()]) {
+        const nested = info[destination.toUpperCase()];
+        if (nested && 'price' in nested) {
+          results.push({ date: dateStr, price: parseFloat(nested.price) });
+        }
+      }
+    }
+    results.sort((a, b) => a.date.localeCompare(b.date));
+    return results;
+  }
+
+  // --- Precio exacto para una combinación específica de ida+vuelta ---
+  async function fetchExactPrice(origin, destination, departDate, returnDate) {
+    const params = new URLSearchParams({ action: 'price', origin, destination, depart_date: departDate });
+    if (returnDate) params.set('return_date', returnDate);
+
+    const url = `${CALENDAR_PROXY_URL}?${params.toString()}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return resp.json();
+  }
+
+  const priceBtn = document.getElementById('price-btn');
+  const exactPriceBox = document.getElementById('exact-price-box');
+
+  priceBtn.addEventListener('click', async () => {
+    const origin = getAirportCode('origin');
+    const destination = getAirportCode('destination');
+    const departDate = document.getElementById('depart-date').value;
+    const returnDate = oneWayCheckbox.checked ? null : document.getElementById('return-date').value;
+
+    if (!origin || !destination) {
+      showError('Elige origen y destino antes de ver el precio.');
+      return;
+    }
+    if (!departDate) {
+      showError('Elige una fecha de ida.');
+      return;
+    }
+    if (!oneWayCheckbox.checked && !returnDate) {
+      showError('Elige una fecha de vuelta, o marca "Solo ida".');
+      return;
+    }
+    if (CALENDAR_PROXY_URL.includes('TU-WORKER')) {
+      showError('Falta configurar la URL del Worker en este archivo (ver comentario en el código).');
+      return;
+    }
+    clearError();
+
+    priceBtn.disabled = true;
+    priceBtn.textContent = '💰 Consultando...';
+    exactPriceBox.classList.add('open');
+    exactPriceBox.innerHTML = '<div class="calendar-status">Consultando precio para estas fechas...</div>';
+
+    try {
+      const result = await fetchExactPrice(origin, destination, departDate, returnDate);
+
+      if (!result.success) {
+        exactPriceBox.innerHTML = `<div class="calendar-status">No encontré precio en caché para estas fechas exactas. Prueba con "Ver precios de todo el mes" para ver qué días sí tienen datos.</div>`;
+        return;
+      }
+
+      const approxNote = result.date_precision === 'month'
+        ? '<div class="calendar-status">📅 Precio aproximado del mes (sin datos para el día exacto).</div>'
+        : '';
+      const tripLabel = returnDate ? `${departDate} → ${returnDate}` : `${departDate} (solo ida)`;
+      const link = buildAffiliateLink(origin, destination, departDate, returnDate);
+      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
+
+      exactPriceBox.innerHTML = `
+        <div class="price-calendar-title">${origin} → ${destination}, ${tripLabel}</div>
+        <div class="price-row cheapest">
+          <span>✈️ ${result.airline}</span>
+          <span class="price-tag">$${result.price.toFixed(0)}</span>
+        </div>
+        ${approxNote}
+        ${linkHtml}`;
+    } catch (err) {
+      exactPriceBox.innerHTML = `<div class="calendar-status">⚠️ Error consultando el precio: ${err.message}</div>`;
+    } finally {
+      priceBtn.disabled = false;
+      priceBtn.textContent = '💰 Ver precio para estas fechas exactas';
+    }
+  });
+
+  // Función compartida por los botones de calendario de ida y de vuelta.
+  // isReturnCalendar=false -> varía el día de IDA (mes de depart-date), vuelta fija opcional
+  // isReturnCalendar=true  -> varía el día de VUELTA (mes de return-date), ida fija obligatoria
+  async function runCalendarSearch(isReturnCalendar, btn, box, defaultBtnText) {
+    const origin = getAirportCode('origin');
+    const destination = getAirportCode('destination');
+    const departDate = document.getElementById('depart-date').value;
+    const returnDateField = document.getElementById('return-date').value;
+
+    if (!origin || !destination) {
+      showError('Elige origen y destino antes de ver el calendario de precios.');
+      return;
+    }
+    if (isReturnCalendar) {
+      if (oneWayCheckbox.checked) {
+        showError('Necesitas una fecha de vuelta para ver ese calendario. Desmarca "Solo ida".');
+        return;
+      }
+      if (!departDate) {
+        showError('Elige primero una fecha de ida fija.');
+        return;
+      }
+      if (!returnDateField) {
+        showError('Elige una fecha de vuelta (el mes de esa fecha es lo que se consulta).');
+        return;
+      }
+    } else if (!departDate) {
+      showError('Elige una fecha de ida (el mes de esa fecha es lo que se consulta).');
+      return;
+    }
+    if (CALENDAR_PROXY_URL.includes('TU-WORKER')) {
+      showError('Falta configurar la URL del Worker en este archivo (ver comentario en el código).');
+      return;
+    }
+    clearError();
+
+    const calendarType = isReturnCalendar ? 'return_date' : 'departure_date';
+    const month = isReturnCalendar ? returnDateField.slice(0, 7) : departDate.slice(0, 7);
+    // El "otro" tramo, fijo: para calendario de vuelta, la ida fija (obligatoria);
+    // para calendario de ida, la vuelta fija (opcional, solo si no es "solo ida").
+    const fixedDate = isReturnCalendar
+      ? departDate
+      : ((!oneWayCheckbox.checked) ? returnDateField : null);
+
+    btn.disabled = true;
+    btn.textContent = '📅 Consultando precios...';
+    box.classList.add('open');
+    box.innerHTML = '<div class="calendar-status">Consultando calendario de precios...</div>';
+
+    try {
+      // Intento 1: el mes exacto que pidió el usuario.
+      let results = await fetchPriceCalendar(origin, destination, month, fixedDate, calendarType);
+      let usedMonth = month;
+
+      if (results.rate_limited) {
+        box.innerHTML = '<div class="calendar-status">⏳ Demasiadas consultas seguidas. Espera unos segundos y vuelve a intentar.</div>';
+        return;
+      }
+
+      // Intento 2: rutas de bajo tráfico a veces no tienen caché para un
+      // mes específico. Probamos meses cercanos automáticamente, con una
+      // pequeña pausa entre cada intento para no disparar el límite de
+      // peticiones de Travelpayouts (código 429/420).
+      if (results.length === 0) {
+        box.innerHTML = '<div class="calendar-status">Sin datos para ese mes, probando fechas cercanas...</div>';
+        for (const offset of [1, -1]) {
+          await new Promise((r) => setTimeout(r, 1200));
+          const altMonth = shiftMonth(month, offset);
+          const altResults = await fetchPriceCalendar(origin, destination, altMonth, fixedDate, calendarType);
+          if (altResults.rate_limited) {
+            box.innerHTML = '<div class="calendar-status">⏳ Demasiadas consultas seguidas. Espera unos segundos y vuelve a intentar.</div>';
+            return;
+          }
+          if (altResults.length > 0) {
+            results = altResults;
+            usedMonth = altMonth;
+            break;
+          }
+        }
+      }
+
+      // Intento 3 (último recurso): precio exacto para las fechas ya
+      // elegidas — mejor cobertura de caché que el calendario completo.
+      if (results.length === 0) {
+        box.innerHTML = '<div class="calendar-status">Buscando el precio más cercano disponible...</div>';
+        const exactDepart = isReturnCalendar ? departDate : departDate;
+        const exactReturn = isReturnCalendar ? returnDateField : ((!oneWayCheckbox.checked) ? returnDateField : null);
+        try {
+          const exact = await fetchExactPrice(origin, destination, exactDepart, exactReturn);
+          if (exact.success) {
+            const approxNote = exact.date_precision === 'month'
+              ? '<div class="calendar-status">📅 Precio aproximado (no hay calendario completo para esta ruta, pero sí este dato).</div>'
+              : '';
+            const link = buildAffiliateLink(origin, destination, exactDepart, exactReturn);
+            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
+            box.innerHTML = `
+              <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
+              <div class="price-row cheapest">
+                <div class="price-row-header">
+                  <span>✈️ ${exact.airline}</span>
+                  <span class="price-tag">$${exact.price.toFixed(0)}</span>
+                </div>
+              </div>
+              ${approxNote}
+              ${linkHtml}`;
+            return;
+          }
+        } catch (innerErr) {
+          // seguimos al mensaje final de abajo si esto también falla
+        }
+        box.innerHTML = `
+          <div class="calendar-status">
+            No encontré precios en caché para esta ruta en los meses cercanos.
+            Esto pasa en rutas con poco tráfico — probablemente nadie ha
+            consultado estas fechas todavía. Intenta con otras fechas, o
+            usa "Ver precio para estas fechas exactas" para ir explorando
+            qué hay disponible.
+          </div>`;
+        return;
+      }
+
+      const cheapest = results.reduce((a, b) => (a.price < b.price ? a : b));
+      const mostExpensive = results.reduce((a, b) => (a.price > b.price ? a : b));
+      const title = isReturnCalendar
+        ? `Precios de vuelta (ida fija ${departDate})`
+        : (fixedDate ? `Precios de ida (vuelta fija ${fixedDate})` : 'Precios de solo ida');
+
+      // IMPORTANTE: el mensaje se calcula a partir de las fechas REALES que
+      // llegaron en los resultados, no de qué mes le pedimos a la API.
+      // En rutas de bajo tráfico, Travelpayouts a veces ignora el mes
+      // pedido y devuelve lo que tenga cacheado — confiar en "qué mes
+      // pedimos" en vez de "qué fechas llegaron" causaba mensajes
+      // incorrectos (ej. mencionar un mes que no tiene nada que ver con
+      // las fechas mostradas).
+      const actualMonths = [...new Set(results.map((r) => r.date.slice(0, 7)))].sort();
+      const spansMultipleMonths = actualMonths.length > 1;
+      const singleDifferentMonth = actualMonths.length === 1 && actualMonths[0] !== month;
+
+      // Color de la barra: verde (barato) -> amarillo -> rojo (caro).
+      function priceColor(price) {
+        const range = mostExpensive.price - cheapest.price;
+        const ratio = range === 0 ? 0 : (price - cheapest.price) / range;
+        const hue = 130 - ratio * 130;
+        return `hsl(${hue}, 65%, 45%)`;
+      }
+      function barWidth(price) {
+        const range = mostExpensive.price - cheapest.price;
+        if (range === 0) return 100;
+        const ratio = (price - cheapest.price) / range;
+        return 15 + ratio * 85;
+      }
+
+      let html = `<div class="price-calendar-title">${title}</div>`;
+      if (singleDifferentMonth) {
+        html += `<div class="calendar-status">No había datos para ${month}, mostrando ${actualMonths[0]} en su lugar.</div>`;
+      } else if (spansMultipleMonths) {
+        html += `<div class="calendar-status">Ruta de bajo tráfico: la caché tiene fechas de varios meses (${actualMonths.join(', ')}).</div>`;
+      }
+
+      if (spansMultipleMonths) {
+        // Con fechas repartidas en varios meses, una sola cuadrícula no
+        // tiene sentido — mantenemos la lista con barras de colores.
+        for (const row of results) {
+          const isCheapest = row.date === cheapest.date;
+          const color = priceColor(row.price);
+          const width = barWidth(row.price);
+          html += `
+            <div class="price-row ${isCheapest ? 'cheapest' : ''}" data-date="${row.date}">
+              <div class="price-row-header">
+                <span>${row.date}${isCheapest ? ' 🟢' : ''}</span>
+                <span class="price-tag">$${row.price.toFixed(0)}</span>
+              </div>
+              <div class="price-bar-track">
+                <div class="price-bar-fill" style="width:${width}%; background:${color};"></div>
+              </div>
+            </div>`;
+        }
+        box.innerHTML = html;
+
+        box.querySelectorAll('.price-row').forEach((row) => {
+          row.addEventListener('click', () => {
+            if (isReturnCalendar) {
+              document.getElementById('return-date').value = row.dataset.date;
+            } else {
+              document.getElementById('depart-date').value = row.dataset.date;
+              if (!oneWayCheckbox.checked) {
+                document.getElementById('return-date').min = row.dataset.date;
+              }
+            }
+          });
+        });
+      } else {
+        // Caso normal: todos los resultados caben en un mes -> cuadrícula
+        // tipo calendario, como Google Flights. Usamos el mes real de los
+        // datos (actualMonths[0]), no el que pedimos originalmente.
+        const selectedDate = isReturnCalendar ? returnDateField : departDate;
+        html += buildMonthGrid(results, actualMonths[0], selectedDate, cheapest.date, priceColor);
+        box.innerHTML = html;
+
+        attachGridClickHandlers(box, (dateStr) => {
+          if (isReturnCalendar) {
+            document.getElementById('return-date').value = dateStr;
+          } else {
+            document.getElementById('depart-date').value = dateStr;
+            if (!oneWayCheckbox.checked) {
+              document.getElementById('return-date').min = dateStr;
+            }
+          }
+        });
+      }
+    } catch (err) {
+      box.innerHTML = `<div class="calendar-status">⚠️ Error consultando el calendario: ${err.message}. Verifica que la URL del Worker sea correcta y esté desplegado.</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = defaultBtnText;
+    }
+  }
+
+  const calendarBtn = document.getElementById('calendar-btn');
+  const calendarBox = document.getElementById('price-calendar');
+  calendarBtn.addEventListener('click', () => {
+    runCalendarSearch(false, calendarBtn, calendarBox, '📅 Ver precios de todo el mes de ida');
+  });
+
+  // Botón principal de Telegram (aparece abajo, fuera del webview)
+  tg.MainButton.setText('Buscar vuelo');
+  tg.MainButton.show();
+  tg.MainButton.onClick(() => {
+    const payload = validateAndBuildPayload();
+    if (!payload) return;
+    tg.sendData(JSON.stringify(payload));
+    tg.close();
+  });
+</script>
+</body>
+</html>
