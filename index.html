@@ -373,14 +373,6 @@
   </div>
 
   <div class="field">
-    <label>Te avisaré por email si baja el precio</label>
-    <div class="calendar-status" id="telegram-status"></div>
-    <button type="button" class="calendar-btn" id="apply-channel-btn" style="margin-top:8px;">
-      Aplicar y mandarme una notificación de prueba
-    </button>
-  </div>
-
-  <div class="field">
     <label for="user-email">Tu correo (para guardar tus rutas y avisos)</label>
     <input type="email" id="user-email" placeholder="tu@correo.com">
   </div>
@@ -584,7 +576,6 @@
   // Solo email como canal de notificación (Telegram quitado para simplificar).
   const selectedChannel = 'email';
   const userEmailInput = document.getElementById('user-email');
-  const telegramStatus = document.getElementById('telegram-status');
 
   function getUserEmail() {
     const email = userEmailInput.value.trim();
@@ -695,43 +686,6 @@
     } finally {
       confirmCodeBtn.disabled = false;
       confirmCodeBtn.textContent = '✅ Confirmar código';
-    }
-  });
-
-  // Botón "Aplicar": guarda la preferencia de canal y manda una
-  // notificación de PRUEBA real, hablando directo con el Worker
-  // (funciona igual dentro o fuera de Telegram).
-  const applyChannelBtn = document.getElementById('apply-channel-btn');
-  applyChannelBtn.addEventListener('click', async () => {
-    clearError();
-    const email = getUserEmail();
-    if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
-    const sessionToken = getValidSessionToken();
-    if (!sessionToken) { promptVerification('Verifica tu correo antes de cambiar el canal de aviso.'); return; }
-
-    applyChannelBtn.disabled = true;
-    applyChannelBtn.textContent = 'Aplicando...';
-    try {
-      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=set_channel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, notify_channel: selectedChannel, session_token: sessionToken }),
-      });
-      const data = await resp.json();
-      if (!data.success && data.needs_verification) {
-        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.');
-      } else if (!data.success) {
-        showError(data.error || 'No se pudo aplicar el canal.');
-      } else if (data.test_sent) {
-        telegramStatus.textContent = `✅ Canal: ${selectedChannel}. Te mandamos una notificación de prueba.`;
-      } else {
-        telegramStatus.textContent = `⚠️ Canal guardado, pero la prueba falló: ${data.test_error || ''}`;
-      }
-    } catch (err) {
-      showError('Error de conexión: ' + err.message);
-    } finally {
-      applyChannelBtn.disabled = false;
-      applyChannelBtn.textContent = 'Aplicar y mandarme una notificación de prueba';
     }
   });
 
