@@ -363,7 +363,7 @@
   </div>
 
   <button type="button" class="calendar-btn" id="calendar-btn">
-    📅 Ver precios del mes (ida y vuelta)
+    🔍 Buscar precio más barato
   </button>
   <div class="price-calendar" id="price-calendar"></div>
 
@@ -378,7 +378,7 @@
   </div>
 
   <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#2481cc); color:#fff; font-weight:700;">
-    🔍 Buscar y guardar esta ruta
+    📌 Darle seguimiento al precio de este vuelo
   </button>
   <div class="price-calendar" id="track-result-box"></div>
 
@@ -748,7 +748,7 @@
       }
 
       const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
-      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
+      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a>` : '';
       const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
       const offerHtml = data.offer
         ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span><span class="price-tag">Total: $${data.offer.price.toFixed(0)}</span></div></div>${linkHtml}`
@@ -768,7 +768,7 @@
       trackResultBox.innerHTML = `<div class="calendar-status">⚠️ Error de conexión: ${err.message}</div>`;
     } finally {
       searchFlightBtn.disabled = false;
-      searchFlightBtn.textContent = '🔍 Buscar y guardar esta ruta';
+      searchFlightBtn.textContent = '📌 Darle seguimiento al precio de este vuelo';
     }
   });
 
@@ -1058,7 +1058,7 @@
               ? '<div class="calendar-status">📅 Precio aproximado (no hay calendario completo para esta ruta, pero sí este dato).</div>'
               : '';
             const link = buildAffiliateLink(origin, destination, exactDepart, exactReturn);
-            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
+            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a>` : '';
             box.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
               <div class="price-row cheapest">
@@ -1185,11 +1185,11 @@
   const calendarBtn = document.getElementById('calendar-btn');
   const calendarBox = document.getElementById('price-calendar');
   calendarBtn.addEventListener('click', () => {
-    runCalendarSearch(false, calendarBtn, calendarBox, '📅 Ver precios del mes (ida y vuelta)');
+    runCalendarSearch(false, calendarBtn, calendarBox, '🔍 Buscar precio más barato');
   });
 
   // Ya no usamos tg.MainButton/tg.sendData — el botón propio
-  // "🔍 Buscar y guardar esta ruta" (más arriba) llama directo al
+  // "📌 Darle seguimiento al precio de este vuelo" (más arriba) llama directo al
   // Worker vía fetch, así que funciona igual dentro o fuera de Telegram.
 </script>
 </body>
