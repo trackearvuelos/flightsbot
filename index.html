@@ -750,8 +750,11 @@
       const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
       const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a>` : '';
       const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
+      const perPersonNote = data.offer && payload.passengers > 1 && data.offer.price_per_person
+        ? `<div class="calendar-status" style="padding:0;">($${data.offer.price_per_person.toFixed(0)} por persona × ${payload.passengers})</div>`
+        : '';
       const offerHtml = data.offer
-        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span><span class="price-tag">Total: $${data.offer.price.toFixed(0)}</span></div></div>${linkHtml}`
+        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span><span class="price-tag">Total: $${data.offer.price.toFixed(0)}</span></div>${perPersonNote}</div>${linkHtml}`
         : '<div class="calendar-status">Guardada. No encontramos precio en vivo ahora mismo, lo seguiremos intentando.</div>';
 
       const notifHtml = data.notification_sent
