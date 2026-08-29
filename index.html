@@ -370,18 +370,6 @@
     <input type="number" id="passengers" value="1" min="1" max="9" step="1">
   </div>
 
-  <div class="field">
-    <label>Ver resultados</label>
-    <div class="channel-toggle">
-      <button type="button" class="channel-option active" id="view-by-day-btn" data-view="day">
-        📅 Por día
-      </button>
-      <button type="button" class="channel-option" id="view-by-month-btn" data-view="month">
-        🗓️ Por mes
-      </button>
-    </div>
-  </div>
-
   <button type="button" class="calendar-btn" id="calendar-btn">
     🔍 Buscar precio más barato
   </button>
@@ -613,47 +601,6 @@
     if (!email || !email.includes('@') || !email.split('@')[1]?.includes('.')) return null;
     return email;
   }
-
-  // --- Selector de vista del calendario: "Por día" o "Por mes" ---
-  let calendarViewMode = 'day';
-  const viewByDayBtn = document.getElementById('view-by-day-btn');
-  const viewByMonthBtn = document.getElementById('view-by-month-btn');
-  const departDateInput = document.getElementById('depart-date');
-  const returnDateInputEl = document.getElementById('return-date');
-  const departDateLabel = document.getElementById('depart-date-label');
-  const returnDateLabel = document.getElementById('return-date-label');
-
-  function currentYearMonth() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  }
-
-  viewByDayBtn.addEventListener('click', () => {
-    calendarViewMode = 'day';
-    viewByDayBtn.classList.add('active');
-    viewByMonthBtn.classList.remove('active');
-    departDateLabel.textContent = 'Fecha de ida';
-    returnDateLabel.textContent = 'Fecha de vuelta';
-    departDateInput.type = 'date';
-    returnDateInputEl.type = 'date';
-    departDateInput.value = today;
-    departDateInput.min = today;
-    returnDateInputEl.min = today;
-  });
-
-  viewByMonthBtn.addEventListener('click', () => {
-    calendarViewMode = 'month';
-    viewByMonthBtn.classList.add('active');
-    viewByDayBtn.classList.remove('active');
-    departDateLabel.textContent = 'Mes de ida';
-    returnDateLabel.textContent = 'Mes de vuelta';
-    departDateInput.type = 'month';
-    returnDateInputEl.type = 'month';
-    const thisMonth = currentYearMonth();
-    departDateInput.value = thisMonth;
-    departDateInput.min = thisMonth;
-    returnDateInputEl.min = thisMonth;
-  });
 
   // --- Sesión de verificación (código de un solo uso por correo) ---
   // Sin esto, cualquiera podría escribir el correo de otra persona y
@@ -1138,26 +1085,8 @@
         return 15 + ratio * 85;
       }
 
-      // Si el usuario eligió "Por mes", agrupamos los resultados: nos
-      // quedamos con el precio MÁS BARATO de cada mes (y la fecha exacta
-      // donde se encontró), en vez de mostrar cada día por separado.
-      // Esto es especialmente útil en rutas de bajo tráfico, donde los
-      // datos ya suelen venir repartidos en varios meses.
-      let displayRows = results;
-      if (calendarViewMode === 'month') {
-        const byMonth = {};
-        for (const row of results) {
-          const monthKey = row.date.slice(0, 7);
-          if (!byMonth[monthKey] || row.price < byMonth[monthKey].price) {
-            byMonth[monthKey] = { date: monthKey, price: row.price, actualDate: row.date };
-          }
-        }
-        displayRows = Object.values(byMonth).sort((a, b) => a.date.localeCompare(b.date));
-      }
-
-      const displayCheapest = displayRows.reduce((a, b) => (a.price < b.price ? a : b));
-      const displayMostExpensive = displayRows.reduce((a, b) => (a.price > b.price ? a : b));
-      const cheapestActualDate = displayCheapest.actualDate || displayCheapest.date;
+      const displayCheapest = results.reduce((a, b) => (a.price < b.price ? a : b));
+      const displayMostExpensive = results.reduce((a, b) => (a.price > b.price ? a : b));
 
       let html = `<div class="price-calendar-title">${title}</div>`;
       if (singleDifferentMonth) {
@@ -1166,24 +1095,17 @@
         html += `<div class="calendar-status">Ruta de bajo tráfico: la caché tiene fechas de varios meses (${actualMonths.join(', ')}).</div>`;
       }
 
-      const MONTH_NAMES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-
-      // Lista con barras de colores para todos los resultados (quitamos
-      // la vista de cuadrícula tipo calendario, que no incluía el botón
-      // de reservar). Cada fila se puede tocar para seleccionar esa
-      // fecha, y agregamos un botón de reserva para el día más barato.
-      for (const row of displayRows) {
+      // Lista con barras de colores para todos los resultados. Cada fila
+      // se puede tocar para seleccionar esa fecha, y agregamos un botón
+      // de reserva para el día más barato.
+      for (const row of results) {
         const isCheapest = row === displayCheapest;
         const color = priceColor(row.price, displayCheapest.price, displayMostExpensive.price);
         const width = barWidth(row.price, displayCheapest.price, displayMostExpensive.price);
-        const clickDate = row.actualDate || row.date;
-        const label = calendarViewMode === 'month'
-          ? `${MONTH_NAMES_ES[parseInt(row.date.slice(5, 7), 10) - 1]} ${row.date.slice(0, 4)} (mejor día: ${row.actualDate})`
-          : row.date;
         html += `
-          <div class="price-row ${isCheapest ? 'cheapest' : ''}" data-date="${clickDate}">
+          <div class="price-row ${isCheapest ? 'cheapest' : ''}" data-date="${row.date}">
             <div class="price-row-header">
-              <span>${label}${isCheapest ? ' 🟢' : ''}</span>
+              <span>${row.date}${isCheapest ? ' 🟢' : ''}</span>
               <span class="price-tag">$${row.price.toFixed(0)}</span>
             </div>
             <div class="price-bar-track">
@@ -1193,11 +1115,11 @@
       }
 
       // Link de reserva para el día más barato encontrado.
-      const bookDepart = isReturnCalendar ? departDate : cheapestActualDate;
-      const bookReturn = isReturnCalendar ? cheapestActualDate : fixedDate;
+      const bookDepart = isReturnCalendar ? departDate : displayCheapest.date;
+      const bookReturn = isReturnCalendar ? displayCheapest.date : fixedDate;
       const cheapestLink = buildAffiliateLink(origin, destination, bookDepart, bookReturn, passengers);
       if (cheapestLink) {
-        html += `<a class="book-link" href="${cheapestLink}" target="_blank" rel="noopener">Reservar (día más barato: ${cheapestActualDate}) →</a>`;
+        html += `<a class="book-link" href="${cheapestLink}" target="_blank" rel="noopener">Reservar (día más barato: ${displayCheapest.date}) →</a>`;
       }
 
       box.innerHTML = html;
@@ -1222,121 +1144,10 @@
     }
   }
 
-  // Búsqueda "Por mes": explora TODO el mes de ida (y, si se llenó,
-  // también todo el mes de vuelta) como dos listas independientes.
-  // No se pueden combinar "cualquier día de un mes" con "cualquier día
-  // de otro mes" en una sola consulta — la API solo permite fijar una
-  // fecha EXACTA para el otro tramo, no un mes completo. Por eso cada
-  // mes se explora por separado (ida: origen→destino; vuelta: destino→
-  // origen), y al final se arma un link de reserva combinando el día
-  // más barato de cada uno.
-  async function runMonthOnlySearch(btn, box) {
-    const origin = getAirportCode('origin');
-    const destination = getAirportCode('destination');
-    const departMonth = document.getElementById('depart-date').value; // "YYYY-MM"
-    const returnMonth = oneWayCheckbox.checked ? null : document.getElementById('return-date').value;
-    const passengers = parseInt(document.getElementById('passengers').value, 10) || 1;
-
-    if (!origin || !destination) {
-      showError('Elige origen y destino antes de buscar.');
-      return;
-    }
-    if (!departMonth) {
-      showError('Elige el mes de ida.');
-      return;
-    }
-    if (!oneWayCheckbox.checked && !returnMonth) {
-      showError('Elige el mes de vuelta, o marca "Solo ida".');
-      return;
-    }
-    if (CALENDAR_PROXY_URL.includes('TU-WORKER')) {
-      showError('Falta configurar la URL del Worker en este archivo (ver comentario en el código).');
-      return;
-    }
-    clearError();
-
-    btn.disabled = true;
-    btn.textContent = '🗓️ Consultando el mes completo...';
-    box.classList.add('open');
-    box.innerHTML = '<div class="calendar-status">Consultando precios de todo el mes...</div>';
-
-    function renderMonthList(results, legLabel) {
-      if (results.length === 0) return `<div class="calendar-status">Sin datos para ${legLabel}.</div>`;
-      const cheapest = results.reduce((a, b) => (a.price < b.price ? a : b));
-      const mostExpensive = results.reduce((a, b) => (a.price > b.price ? a : b));
-      let html = `<div class="price-calendar-title">${legLabel}</div>`;
-      for (const row of results) {
-        const isCheapest = row.date === cheapest.date;
-        const range = mostExpensive.price - cheapest.price;
-        const ratio = range === 0 ? 0 : (row.price - cheapest.price) / range;
-        const color = `hsl(${130 - ratio * 130}, 65%, 45%)`;
-        const width = range === 0 ? 100 : 15 + ratio * 85;
-        html += `
-          <div class="price-row ${isCheapest ? 'cheapest' : ''}">
-            <div class="price-row-header">
-              <span>${row.date}${isCheapest ? ' 🟢' : ''}</span>
-              <span class="price-tag">$${row.price.toFixed(0)}</span>
-            </div>
-            <div class="price-bar-track">
-              <div class="price-bar-fill" style="width:${width}%; background:${color};"></div>
-            </div>
-          </div>`;
-      }
-      return { html, cheapestDate: cheapest.date };
-    }
-
-    try {
-      const idaResults = await fetchPriceCalendar(origin, destination, departMonth, null, 'departure_date', passengers);
-      if (idaResults.rate_limited) {
-        box.innerHTML = '<div class="calendar-status">⏳ Demasiadas consultas seguidas. Espera unos segundos y vuelve a intentar.</div>';
-        return;
-      }
-
-      let vueltaResults = [];
-      if (returnMonth) {
-        await new Promise((r) => setTimeout(r, 800)); // evitar límite de peticiones seguidas
-        vueltaResults = await fetchPriceCalendar(destination, origin, returnMonth, null, 'departure_date', passengers);
-        if (vueltaResults.rate_limited) {
-          box.innerHTML = '<div class="calendar-status">⏳ Demasiadas consultas seguidas. Espera unos segundos y vuelve a intentar.</div>';
-          return;
-        }
-      }
-
-      const idaBlock = renderMonthList(idaResults, `✈️ Ida: ${origin} → ${destination}`);
-      let html = typeof idaBlock === 'string' ? idaBlock : idaBlock.html;
-      let bookDepart = typeof idaBlock === 'object' ? idaBlock.cheapestDate : null;
-      let bookReturn = null;
-
-      if (returnMonth) {
-        const vueltaBlock = renderMonthList(vueltaResults, `✈️ Vuelta: ${destination} → ${origin}`);
-        html += typeof vueltaBlock === 'string' ? vueltaBlock : vueltaBlock.html;
-        bookReturn = typeof vueltaBlock === 'object' ? vueltaBlock.cheapestDate : null;
-      }
-
-      if (bookDepart) {
-        const link = buildAffiliateLink(origin, destination, bookDepart, bookReturn, passengers);
-        if (link) {
-          html += `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar (combinando los días más baratos) →</a>`;
-        }
-      }
-
-      box.innerHTML = html;
-    } catch (err) {
-      box.innerHTML = `<div class="calendar-status">⚠️ Error consultando el mes: ${err.message}</div>`;
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '🔍 Buscar precio más barato';
-    }
-  }
-
   const calendarBtn = document.getElementById('calendar-btn');
   const calendarBox = document.getElementById('price-calendar');
   calendarBtn.addEventListener('click', () => {
-    if (calendarViewMode === 'month') {
-      runMonthOnlySearch(calendarBtn, calendarBox);
-    } else {
-      runCalendarSearch(false, calendarBtn, calendarBox, '🔍 Buscar precio más barato');
-    }
+    runCalendarSearch(false, calendarBtn, calendarBox, '🔍 Buscar precio más barato');
   });
 
   // Ya no usamos tg.MainButton/tg.sendData — el botón propio
