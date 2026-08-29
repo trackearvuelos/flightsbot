@@ -114,11 +114,24 @@
   }
   .error {
     color: #e53935;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 600;
     margin-top: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(229, 57, 53, 0.08);
+    border: 1px solid rgba(229, 57, 53, 0.3);
     display: none;
   }
-  .error.show { display: block; }
+  .error.show {
+    display: block;
+    animation: error-pulse 0.5s ease;
+  }
+  @keyframes error-pulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+  }
   .checkbox-row {
     display: flex;
     align-items: center;
@@ -301,11 +314,6 @@
   <h1>✈️ Buscar vuelo</h1>
   <p class="subtitle">Escribe la ciudad, elige las fechas y te aviso si el precio baja.</p>
 
-  <div class="field">
-    <label for="user-email">Tu correo (para guardar tus rutas y avisos)</label>
-    <input type="email" id="user-email" placeholder="tu@correo.com">
-  </div>
-
   <div class="field" id="verification-box" style="display:none;">
     <div class="calendar-status" id="verification-status"></div>
     <button type="button" class="calendar-btn" id="request-code-btn">
@@ -365,22 +373,16 @@
   </div>
 
   <div class="field">
-    <label>¿Dónde te aviso si baja el precio?</label>
-    <div class="channel-toggle">
-      <button type="button" class="channel-option active" id="channel-telegram-btn" data-channel="telegram">
-        📱 Telegram
-      </button>
-      <button type="button" class="channel-option" id="channel-email-btn" data-channel="email">
-        ✉️ Email
-      </button>
-    </div>
-    <button type="button" class="calendar-btn" id="connect-telegram-btn" style="margin-top:8px;">
-      🔗 Conectar Telegram
-    </button>
+    <label>Te avisaré por email si baja el precio</label>
     <div class="calendar-status" id="telegram-status"></div>
     <button type="button" class="calendar-btn" id="apply-channel-btn" style="margin-top:8px;">
       Aplicar y mandarme una notificación de prueba
     </button>
+  </div>
+
+  <div class="field">
+    <label for="user-email">Tu correo (para guardar tus rutas y avisos)</label>
+    <input type="email" id="user-email" placeholder="tu@correo.com">
   </div>
 
   <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#2481cc); color:#fff; font-weight:700;">
@@ -560,6 +562,11 @@
     const el = document.getElementById('error-msg');
     el.textContent = msg;
     el.classList.add('show');
+    // Nos aseguramos de que el usuario SIEMPRE vea el error, sin importar
+    // en qué parte de la página esté el botón que lo generó — antes el
+    // mensaje quedaba fijo al final de la página y podía pasar
+    // desapercibido si el usuario estaba arriba.
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   function clearError() {
     document.getElementById('error-msg').classList.remove('show');
@@ -574,28 +581,10 @@
     return null;
   }
 
-  // --- Selector de canal de notificación (Telegram / Email) ---
-  let selectedChannel = 'telegram';
-  const channelTelegramBtn = document.getElementById('channel-telegram-btn');
-  const channelEmailBtn = document.getElementById('channel-email-btn');
+  // Solo email como canal de notificación (Telegram quitado para simplificar).
+  const selectedChannel = 'email';
   const userEmailInput = document.getElementById('user-email');
-  const connectTelegramBtn = document.getElementById('connect-telegram-btn');
   const telegramStatus = document.getElementById('telegram-status');
-
-  channelTelegramBtn.addEventListener('click', () => {
-    selectedChannel = 'telegram';
-    channelTelegramBtn.classList.add('active');
-    channelEmailBtn.classList.remove('active');
-    connectTelegramBtn.style.display = 'block';
-  });
-
-  channelEmailBtn.addEventListener('click', () => {
-    selectedChannel = 'email';
-    channelEmailBtn.classList.add('active');
-    channelTelegramBtn.classList.remove('active');
-    connectTelegramBtn.style.display = 'none';
-    telegramStatus.textContent = '';
-  });
 
   function getUserEmail() {
     const email = userEmailInput.value.trim();
@@ -706,40 +695,6 @@
     } finally {
       confirmCodeBtn.disabled = false;
       confirmCodeBtn.textContent = '✅ Confirmar código';
-    }
-  });
-
-  // Botón "Conectar Telegram": pide al Worker un link de un solo uso;
-  // al tocarlo se abre Telegram, el usuario presiona "Start", y el
-  // Worker vincula su chat_id con este correo (ver telegram-webhook).
-  connectTelegramBtn.addEventListener('click', async () => {
-    clearError();
-    const email = getUserEmail();
-    if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
-    const sessionToken = getValidSessionToken();
-    if (!sessionToken) { promptVerification('Verifica tu correo antes de conectar Telegram.'); return; }
-
-    connectTelegramBtn.disabled = true;
-    connectTelegramBtn.textContent = 'Generando link...';
-    try {
-      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=connect_telegram`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, session_token: sessionToken }),
-      });
-      const data = await resp.json();
-      if (data.success) {
-        telegramStatus.innerHTML = `<a class="book-link" href="${data.deep_link}" target="_blank" rel="noopener">Abrir Telegram y presionar Start →</a>`;
-      } else if (data.needs_verification) {
-        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.');
-      } else {
-        showError(data.error || 'No se pudo generar el link.');
-      }
-    } catch (err) {
-      showError('Error de conexión: ' + err.message);
-    } finally {
-      connectTelegramBtn.disabled = false;
-      connectTelegramBtn.textContent = '🔗 Conectar Telegram';
     }
   });
 
