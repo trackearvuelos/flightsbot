@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Buscar vuelo</title>
+<title>Trackear Vuelos</title>
+<title>La manera mas facil de trackear tus vuelos</title>
 
 <!-- Configuración de PWA: permite "Agregar a pantalla de inicio" con
      ícono propio, en vez del ícono genérico del navegador. -->
@@ -363,7 +364,7 @@
   </div>
 
   <button type="button" class="calendar-btn" id="calendar-btn">
-    📅 Ver precios de todo el mes de ida
+    📅 Ver precios del mes (ida y vuelta)
   </button>
   <div class="price-calendar" id="price-calendar"></div>
 
@@ -980,9 +981,15 @@
         showError('Elige una fecha de vuelta (el mes de esa fecha es lo que se consulta).');
         return;
       }
-    } else if (!departDate) {
-      showError('Elige una fecha de ida (el mes de esa fecha es lo que se consulta).');
-      return;
+    } else {
+      if (!departDate) {
+        showError('Elige una fecha de ida (el mes de esa fecha es lo que se consulta).');
+        return;
+      }
+      if (!oneWayCheckbox.checked && !returnDateField) {
+        showError('Elige una fecha de vuelta, o marca "Solo ida" si prefieres precios de solo ida.');
+        return;
+      }
     }
     if (CALENDAR_PROXY_URL.includes('TU-WORKER')) {
       showError('Falta configurar la URL del Worker en este archivo (ver comentario en el código).');
@@ -990,29 +997,19 @@
     }
     clearError();
 
-    // Al ver precios de todo el mes de IDA, borramos la fecha de vuelta
-    // si había una puesta. Fijar una vuelta específica reduce mucho las
-    // probabilidades de encontrar datos (la ruta tendría que tener esa
-    // combinación EXACTA en caché), así que priorizamos mostrar el mes
-    // completo de ida sin esa restricción.
-    let clearedReturnDate = false;
-    if (!isReturnCalendar && returnDateField) {
-      document.getElementById('return-date').value = '';
-      clearedReturnDate = true;
-    }
-
     const calendarType = isReturnCalendar ? 'return_date' : 'departure_date';
     const month = isReturnCalendar ? returnDateField.slice(0, 7) : departDate.slice(0, 7);
-    // El "otro" tramo, fijo: para calendario de vuelta, la ida fija (obligatoria);
-    // para calendario de ida, ya no fijamos vuelta (ver clearedReturnDate arriba).
-    const fixedDate = isReturnCalendar ? departDate : null;
+    // El "otro" tramo, fijo: para calendario de vuelta, la ida fija
+    // (obligatoria); para calendario de ida, la vuelta fija (si no es
+    // "solo ida") — así el precio mostrado es de ida Y vuelta combinado.
+    const fixedDate = isReturnCalendar
+      ? departDate
+      : (!oneWayCheckbox.checked ? returnDateField : null);
 
     btn.disabled = true;
     btn.textContent = '📅 Consultando precios...';
     box.classList.add('open');
-    box.innerHTML = clearedReturnDate
-      ? '<div class="calendar-status">Se borró la fecha de vuelta para mostrar todos los precios de ida del mes. Consultando...</div>'
-      : '<div class="calendar-status">Consultando calendario de precios...</div>';
+    box.innerHTML = '<div class="calendar-status">Consultando calendario de precios...</div>';
 
     try {
       // Intento 1: el mes exacto que pidió el usuario.
@@ -1051,9 +1048,10 @@
       if (results.length === 0) {
         box.innerHTML = '<div class="calendar-status">Buscando el precio más cercano disponible...</div>';
         const exactDepart = departDate;
-        // Si borramos la vuelta arriba (caso ida), el respaldo también
-        // debe ser solo ida, no volver a usar la fecha vieja de vuelta.
-        const exactReturn = isReturnCalendar ? returnDateField : null;
+        // Usamos el mismo "fixedDate" que ya calculamos arriba (la vuelta,
+        // si aplica), para que el respaldo sea consistente con lo que
+        // el usuario pidió (ida y vuelta combinado, o solo ida).
+        const exactReturn = fixedDate;
         try {
           const exact = await fetchExactPrice(origin, destination, exactDepart, exactReturn);
           if (exact.success) {
@@ -1188,7 +1186,7 @@
   const calendarBtn = document.getElementById('calendar-btn');
   const calendarBox = document.getElementById('price-calendar');
   calendarBtn.addEventListener('click', () => {
-    runCalendarSearch(false, calendarBtn, calendarBox, '📅 Ver precios de todo el mes de ida');
+    runCalendarSearch(false, calendarBtn, calendarBox, '📅 Ver precios del mes (ida y vuelta)');
   });
 
   // Ya no usamos tg.MainButton/tg.sendData — el botón propio
