@@ -226,6 +226,14 @@
     font-size: 14px;
     text-decoration: none;
   }
+  .app-install-link {
+    display: block;
+    text-align: center;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--tg-theme-link-color, #2481cc);
+    text-decoration: none;
+  }
   .month-grid-title {
     text-align: center;
     font-weight: 700;
@@ -398,6 +406,12 @@
   // Ya NO ponemos el token de Travelpayouts aquí — vive seguro en el Worker.
   // Pega aquí la URL de tu Worker desplegado (ver webapp/calendar-proxy-worker.js).
   const CALENDAR_PROXY_URL = "https://flightsprices.duardipr.workers.dev";
+
+  // Link de afiliado a la instalación de la app de Aviasales (no a una
+  // búsqueda específica). Si alguien la instala desde aquí, Travelpayouts
+  // te asigna ese usuario de por vida — comisión de todas sus compras
+  // futuras en la app, no solo esta.
+  const AVIASALES_APP_INSTALL_LINK = "https://aviasales.tpk.lu/FXApkW1b";
 
   // Tu marker de afiliado de Travelpayouts (el mismo que usas en config.py
   // del bot, dentro de TRAVELPAYOUTS_MARKER). Mientras esté vacío o con el
@@ -748,7 +762,7 @@
       }
 
       const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
-      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a>` : '';
+      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${AVIASALES_APP_INSTALL_LINK}" target="_blank" rel="noopener">📲 ¿Prefieres la app? Instálala aquí</a>` : '';
       const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
       const perPersonNote = data.offer && payload.passengers > 1 && data.offer.price_per_person
         ? `<div class="calendar-status" style="padding:0;">($${data.offer.price_per_person.toFixed(0)} por persona × ${payload.passengers})</div>`
@@ -1010,7 +1024,7 @@
               ? '<div class="calendar-status">📅 Precio aproximado (no hay calendario completo para esta ruta, pero sí este dato).</div>'
               : '';
             const link = buildAffiliateLink(origin, destination, exactDepart, exactReturn);
-            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a>` : '';
+            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${AVIASALES_APP_INSTALL_LINK}" target="_blank" rel="noopener">📲 ¿Prefieres la app? Instálala aquí</a>` : '';
             box.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
               <div class="price-row cheapest">
