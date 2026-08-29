@@ -357,10 +357,10 @@
     <label for="one-way">Solo ida (sin vuelta)</label>
   </div>
 
-  <button type="button" class="calendar-btn" id="price-btn">
-    💰 Ver precio para estas fechas exactas
-  </button>
-  <div class="price-calendar" id="exact-price-box"></div>
+  <div class="field">
+    <label for="passengers">Pasajeros</label>
+    <input type="number" id="passengers" value="1" min="1" max="9" step="1">
+  </div>
 
   <button type="button" class="calendar-btn" id="calendar-btn">
     📅 Ver precios de todo el mes de ida
@@ -408,7 +408,7 @@
   // Arma el link de búsqueda de Aviasales con el formato correcto:
   // /search/ORIGEN + DDMM(ida) + DESTINO + [DDMM(vuelta)] + PASAJEROS
   // (mismo formato que build_affiliate_link() en bot.py)
-  function buildAffiliateLink(origin, destination, departDate, returnDate) {
+  function buildAffiliateLink(origin, destination, departDate, returnDate, passengers) {
     try {
       const [dy, dm, dd] = departDate.split('-');
       const departDDMM = `${dd}${dm}`;
@@ -417,7 +417,8 @@
         const [ry, rm, rd] = returnDate.split('-');
         returnDDMM = `${rd}${rm}`;
       }
-      const path = `${origin.toUpperCase()}${departDDMM}${destination.toUpperCase()}${returnDDMM}1`;
+      const pax = passengers && passengers > 0 ? passengers : 1;
+      const path = `${origin.toUpperCase()}${departDDMM}${destination.toUpperCase()}${returnDDMM}${pax}`;
       return `https://www.aviasales.com/search/${path}?marker=${TRAVELPAYOUTS_MARKER}`;
     } catch (e) {
       return null;
@@ -697,6 +698,7 @@
     const departDate = document.getElementById('depart-date').value;
     const returnDate = oneWayCheckbox.checked ? null : document.getElementById('return-date').value;
     const maxPrice = document.getElementById('max-price').value;
+    const passengers = parseInt(document.getElementById('passengers').value, 10) || 1;
 
     if (!email) { showError('Escribe un correo válido arriba.'); return null; }
     if (!origin) { showError('Elige un origen válido de la lista de sugerencias.'); return null; }
@@ -705,6 +707,7 @@
     if (!departDate) { showError('Elige una fecha de ida.'); return null; }
     if (!oneWayCheckbox.checked && !returnDate) { showError('Elige una fecha de vuelta, o marca "Solo ida".'); return null; }
     if (returnDate && returnDate < departDate) { showError('La fecha de vuelta no puede ser antes que la de ida.'); return null; }
+    if (passengers < 1 || passengers > 9) { showError('El número de pasajeros debe estar entre 1 y 9.'); return null; }
 
     return {
       email,
@@ -713,6 +716,7 @@
       depart_date: departDate,
       return_date: returnDate || null,
       max_price: maxPrice ? parseFloat(maxPrice) : null,
+      passengers,
       notify_channel: selectedChannel,
     };
   }
@@ -743,10 +747,11 @@
         return;
       }
 
-      const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date);
+      const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
       const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
+      const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
       const offerHtml = data.offer
-        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline}</span><span class="price-tag">$${data.offer.price.toFixed(0)}</span></div></div>${linkHtml}`
+        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span><span class="price-tag">Total: $${data.offer.price.toFixed(0)}</span></div></div>${linkHtml}`
         : '<div class="calendar-status">Guardada. No encontramos precio en vivo ahora mismo, lo seguiremos intentando.</div>';
 
       const notifHtml = data.notification_sent
@@ -801,11 +806,12 @@
       let html = '<div class="price-calendar-title">Tus rutas</div>';
       for (const r of routes) {
         const tripLabel = r.return_date ? `${r.depart_date} → ${r.return_date}` : `${r.depart_date} (solo ida)`;
-        const priceLabel = r.lowest_price ? `Mínimo visto: $${Math.round(r.lowest_price)}` : 'Sin precio aún';
+        const paxLabel = r.passengers === 1 ? '1 pasajero' : `${r.passengers} pasajeros`;
+        const priceLabel = r.lowest_price ? `Mínimo visto (total): $${Math.round(r.lowest_price)}` : 'Sin precio aún';
         html += `
           <div class="price-row">
             <div class="price-row-header">
-              <span>${r.origin} → ${r.destination}, ${tripLabel}</span>
+              <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel})</span>
             </div>
             <div class="calendar-status" style="padding:0;">${priceLabel}</div>
             <button type="button" class="channel-option" data-remove-id="${r.id}" style="margin-top:6px; width:100%;">🗑️ Eliminar</button>
@@ -947,69 +953,6 @@
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return resp.json();
   }
-
-  const priceBtn = document.getElementById('price-btn');
-  const exactPriceBox = document.getElementById('exact-price-box');
-
-  priceBtn.addEventListener('click', async () => {
-    const origin = getAirportCode('origin');
-    const destination = getAirportCode('destination');
-    const departDate = document.getElementById('depart-date').value;
-    const returnDate = oneWayCheckbox.checked ? null : document.getElementById('return-date').value;
-
-    if (!origin || !destination) {
-      showError('Elige origen y destino antes de ver el precio.');
-      return;
-    }
-    if (!departDate) {
-      showError('Elige una fecha de ida.');
-      return;
-    }
-    if (!oneWayCheckbox.checked && !returnDate) {
-      showError('Elige una fecha de vuelta, o marca "Solo ida".');
-      return;
-    }
-    if (CALENDAR_PROXY_URL.includes('TU-WORKER')) {
-      showError('Falta configurar la URL del Worker en este archivo (ver comentario en el código).');
-      return;
-    }
-    clearError();
-
-    priceBtn.disabled = true;
-    priceBtn.textContent = '💰 Consultando...';
-    exactPriceBox.classList.add('open');
-    exactPriceBox.innerHTML = '<div class="calendar-status">Consultando precio para estas fechas...</div>';
-
-    try {
-      const result = await fetchExactPrice(origin, destination, departDate, returnDate);
-
-      if (!result.success) {
-        exactPriceBox.innerHTML = `<div class="calendar-status">No encontré precio en caché para estas fechas exactas. Prueba con "Ver precios de todo el mes" para ver qué días sí tienen datos.</div>`;
-        return;
-      }
-
-      const approxNote = result.date_precision === 'month'
-        ? '<div class="calendar-status">📅 Precio aproximado del mes (sin datos para el día exacto).</div>'
-        : '';
-      const tripLabel = returnDate ? `${departDate} → ${returnDate}` : `${departDate} (solo ida)`;
-      const link = buildAffiliateLink(origin, destination, departDate, returnDate);
-      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar en Aviasales →</a>` : '';
-
-      exactPriceBox.innerHTML = `
-        <div class="price-calendar-title">${origin} → ${destination}, ${tripLabel}</div>
-        <div class="price-row cheapest">
-          <span>✈️ ${result.airline}</span>
-          <span class="price-tag">$${result.price.toFixed(0)}</span>
-        </div>
-        ${approxNote}
-        ${linkHtml}`;
-    } catch (err) {
-      exactPriceBox.innerHTML = `<div class="calendar-status">⚠️ Error consultando el precio: ${err.message}</div>`;
-    } finally {
-      priceBtn.disabled = false;
-      priceBtn.textContent = '💰 Ver precio para estas fechas exactas';
-    }
-  });
 
   // Función compartida por los botones de calendario de ida y de vuelta.
   // isReturnCalendar=false -> varía el día de IDA (mes de depart-date), vuelta fija opcional
