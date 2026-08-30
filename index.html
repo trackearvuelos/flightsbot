@@ -543,17 +543,6 @@
     font-weight: 700;
     letter-spacing: 0.3px;
   }
-  #splash-rotating-text {
-    color: rgba(255,255,255,0.85);
-    font-size: 14px;
-    font-weight: 600;
-    height: 20px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  #splash-rotating-text.visible {
-    opacity: 1;
-  }
 </style>
 </head>
 <body>
@@ -593,7 +582,6 @@
       <img id="splash-icon" src="icons/icon-512.png" alt="Trackear Vuelos">
     </div>
     <div id="splash-title">Trackear Vuelos</div>
-    <div id="splash-rotating-text"></div>
   </div>
 
   <h1>✈️ Trackear Vuelos</h1>
@@ -745,26 +733,6 @@
       const icon = document.getElementById('splash-icon');
       if (icon) icon.classList.add('hovering');
     }, 6600);
-
-    // Palabras que van apareciendo y desapareciendo durante los 10
-    // segundos del splash, para mostrar todo lo que cubre el sitio
-    // (no solo vuelos).
-    const rotatingWords = ['Viajes', 'Seguros', 'Retrasos de vuelo', 'Entradas', 'Hoteles', 'Autos'];
-    const rotatingEl = document.getElementById('splash-rotating-text');
-    let wordIndex = 0;
-    const msPerWord = 10000 / rotatingWords.length;
-
-    function showNextWord() {
-      rotatingEl.classList.remove('visible');
-      setTimeout(() => {
-        rotatingEl.textContent = rotatingWords[wordIndex % rotatingWords.length];
-        rotatingEl.classList.add('visible');
-        wordIndex++;
-      }, 150); // pequeña pausa para que se note el "desaparece y aparece"
-    }
-    showNextWord();
-    const rotatingInterval = setInterval(showNextWord, msPerWord);
-    setTimeout(() => clearInterval(rotatingInterval), 10000);
   }
 
   window.addEventListener('load', () => {
