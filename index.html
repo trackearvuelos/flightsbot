@@ -237,17 +237,61 @@
   .qr-box {
     text-align: center;
     margin-bottom: 20px;
-    padding: 12px;
-    border: 1px solid var(--tg-theme-hint-color, #dddddd);
-    border-radius: 12px;
+    padding: 20px 12px;
+    border-radius: 16px;
+    /* Fondo tipo "cielo" con nubes sutiles y una estela de avión,
+       coherente con el tema del bot. El QR en sí va en una tarjeta
+       blanca aparte (ver .qr-card) para que este fondo no interfiera
+       con la lectura del código. */
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 8%),
+      radial-gradient(circle at 80% 15%, rgba(255,255,255,0.4) 0%, transparent 10%),
+      radial-gradient(circle at 55% 75%, rgba(255,255,255,0.35) 0%, transparent 9%),
+      radial-gradient(circle at 25% 85%, rgba(255,255,255,0.3) 0%, transparent 7%),
+      linear-gradient(160deg, #bfe3fb 0%, #eaf6ff 55%, #ffffff 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .qr-box::before {
+    /* Estela de avión: una línea punteada diagonal con un avioncito */
+    content: "✈️";
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    font-size: 20px;
+    transform: rotate(45deg);
+    opacity: 0.85;
+  }
+  .qr-box::after {
+    content: "";
+    position: absolute;
+    top: 26px;
+    left: 26px;
+    width: 55%;
+    height: 55%;
+    border-top: 2px dashed rgba(36, 129, 204, 0.35);
+    border-radius: 0 0 0 40px;
+    transform: rotate(0deg);
+  }
+  .qr-card {
+    display: inline-block;
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 1;
   }
   .qr-box img {
-    border-radius: 8px;
+    display: block;
+    border-radius: 6px;
   }
   .qr-box p {
-    margin: 8px 0 0 0;
+    margin: 10px 0 0 0;
     font-size: 12px;
-    color: var(--tg-theme-hint-color, #888888);
+    color: #4a6b85;
+    position: relative;
+    z-index: 1;
   }
   .month-grid-title {
     text-align: center;
@@ -338,8 +382,10 @@
   <p class="subtitle">Escribe la ciudad, elige las fechas y te aviso si el precio baja.</p>
 
   <div class="qr-box">
-    <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" width="140" height="140">
-    <p>📱 Escanea con tu celular para abrirlo ahí, y luego agrégalo a tu pantalla de inicio como una app.</p>
+    <div class="qr-card">
+      <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" width="140" height="140">
+    </div>
+    <p>📱 Escanea con tu celular y luego agrégalo a tu pantalla de inicio como una app.</p>
   </div>
 
   <div class="field" id="verification-box" style="display:none;">
