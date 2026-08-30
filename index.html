@@ -491,20 +491,20 @@
     width: 96px;
     height: 96px;
     filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2));
-    animation: fold-paper-fade-out 0.5s ease forwards;
-    animation-delay: 3s;
+    animation: fold-paper-fade-out 1s ease forwards;
+    animation-delay: 6s;
   }
   #fold-line-1 {
-    animation: draw-fold-line 0.8s ease forwards;
-    animation-delay: 0.4s;
+    animation: draw-fold-line 1.6s ease forwards;
+    animation-delay: 0.8s;
   }
   #fold-line-2 {
-    animation: draw-fold-line 0.8s ease forwards;
-    animation-delay: 1.2s;
+    animation: draw-fold-line 1.6s ease forwards;
+    animation-delay: 2.4s;
   }
   #fold-line-3 {
-    animation: draw-fold-line-3 0.8s ease forwards;
-    animation-delay: 2.0s;
+    animation: draw-fold-line-3 1.6s ease forwards;
+    animation-delay: 4.0s;
   }
   @keyframes draw-fold-line {
     to { stroke-dashoffset: 0; }
@@ -523,8 +523,8 @@
     border-radius: 22px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     opacity: 0;
-    animation: splash-icon-assemble 0.6s ease forwards, splash-icon-hover 1.2s ease-in-out infinite;
-    animation-delay: 3s, 4s;
+    animation: splash-icon-assemble 1.2s ease forwards, splash-icon-hover 1.2s ease-in-out infinite;
+    animation-delay: 6s, 8s;
   }
   @keyframes splash-icon-assemble {
     0% { opacity: 0; transform: scale(0.6) rotate(-12deg); }
@@ -715,15 +715,15 @@
       const splash = document.getElementById('splash-screen');
       splash.classList.add('fade-out');
       setTimeout(() => splash.remove(), 500);
-    }, 5000);
+    }, 10000);
 
-    // Palabras que van apareciendo y desapareciendo durante los 5
+    // Palabras que van apareciendo y desapareciendo durante los 10
     // segundos del splash, para mostrar todo lo que cubre el sitio
     // (no solo vuelos).
     const rotatingWords = ['Viajes', 'Seguros', 'Retrasos de vuelo', 'Entradas', 'Hoteles', 'Autos'];
     const rotatingEl = document.getElementById('splash-rotating-text');
     let wordIndex = 0;
-    const msPerWord = 5000 / rotatingWords.length;
+    const msPerWord = 10000 / rotatingWords.length;
 
     function showNextWord() {
       rotatingEl.classList.remove('visible');
@@ -735,7 +735,7 @@
     }
     showNextWord();
     const rotatingInterval = setInterval(showNextWord, msPerWord);
-    setTimeout(() => clearInterval(rotatingInterval), 5000);
+    setTimeout(() => clearInterval(rotatingInterval), 10000);
 
     // Registramos el Service Worker (necesario para poder recibir
     // notificaciones push reales, incluso con la app cerrada).
