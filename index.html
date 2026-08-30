@@ -1247,33 +1247,31 @@
   const searchFlightBtn = document.getElementById('search-flight-btn');
   const trackResultBox = document.getElementById('track-result-box');
 
-  function renderOfferPreviewRow(offer, label, flightType, payload) {
-    if (!offer) {
-      return `<div class="calendar-status">Sin vuelos ${label.toLowerCase()} disponibles ahora mismo.</div>`;
-    }
+  function renderOfferPreviewRow(offer, payload) {
     const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
     const perPersonNote = payload.passengers > 1 && offer.price_per_person
       ? ` ($${offer.price_per_person.toFixed(0)} c/u)`
       : '';
+    const stopsLabel = offer.is_direct ? 'Directo' : 'Con escala';
     return `
       <div class="price-row">
         <div class="price-row-header">
-          <span>✈️ ${label} — ${offer.airline} (${paxLabel})</span>
+          <span>✈️ ${offer.airline} — ${stopsLabel} (${paxLabel})</span>
           <span class="price-tag">$${offer.price.toFixed(0)}${perPersonNote}</span>
         </div>
-        <button type="button" class="calendar-btn track-this-btn" data-flight-type="${flightType}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff;">
+        <button type="button" class="calendar-btn track-this-btn" data-flight-type="${offer.is_direct ? 'direct' : 'with_stops'}" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff;">
           📌 Seguir este vuelo
         </button>
       </div>`;
   }
 
-  async function saveTrackedRoute(payload, flightType, statusBox) {
+  async function saveTrackedRoute(payload, flightType, preferredAirline, statusBox) {
     statusBox.innerHTML = '<div class="calendar-status">Guardando...</div>';
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, flight_type: flightType }),
+        body: JSON.stringify({ ...payload, flight_type: flightType, preferred_airline: preferredAirline }),
       });
       const data = await resp.json();
       if (!data.success) {
@@ -1313,7 +1311,7 @@
     searchFlightBtn.disabled = true;
     searchFlightBtn.textContent = 'Buscando...';
     trackResultBox.classList.add('open');
-    trackResultBox.innerHTML = '<div class="calendar-status">Consultando vuelos directos y con escala...</div>';
+    trackResultBox.innerHTML = '<div class="calendar-status">Consultando todas las aerolíneas disponibles...</div>';
 
     try {
       const params = new URLSearchParams({
@@ -1330,13 +1328,12 @@
         return;
       }
 
-      const directHtml = renderOfferPreviewRow(data.offer_direct, 'Directo', 'direct', payload);
-      const stopsHtml = renderOfferPreviewRow(data.offer_with_stops, 'Con escala', 'with_stops', payload);
+      const offers = data.offers_all || [];
+      const rowsHtml = offers.map((offer) => renderOfferPreviewRow(offer, payload)).join('');
 
       trackResultBox.innerHTML = `
-        <div class="price-calendar-title">Elige cuál seguir (puedes elegir los dos):</div>
-        ${directHtml}
-        ${stopsHtml}
+        <div class="price-calendar-title">Elige cuál(es) seguir — ${offers.length} aerolínea(s) encontrada(s):</div>
+        ${rowsHtml}
         <div id="track-save-status"></div>`;
 
       trackResultBox.querySelectorAll('.track-this-btn').forEach((btn) => {
@@ -1344,7 +1341,7 @@
           btn.disabled = true;
           btn.textContent = 'Guardando...';
           const statusBox = document.getElementById('track-save-status');
-          saveTrackedRoute(payload, btn.dataset.flightType, statusBox);
+          saveTrackedRoute(payload, btn.dataset.flightType, btn.dataset.airline, statusBox);
         });
       });
     } catch (err) {
@@ -1662,25 +1659,21 @@
         const exactReturn = fixedDate;
         try {
           const exact = await fetchExactPrice(origin, destination, exactDepart, exactReturn, passengers);
-          if (exact.success && (exact.offer_direct || exact.offer_with_stops)) {
+          if (exact.success && exact.offers_all && exact.offers_all.length > 0) {
             const link = buildAffiliateLink(origin, destination, exactDepart, exactReturn, passengers);
             const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ¿Vuelo retrasado/cancelado? Reclama aquí</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 (o también aquí)</a>` : '';
 
-            function renderRow(offer, label) {
-              if (!offer) return `<div class="calendar-status">Sin vuelos ${label.toLowerCase()} disponibles.</div>`;
-              return `
-                <div class="price-row cheapest">
-                  <div class="price-row-header">
-                    <span>✈️ ${label} — ${offer.airline}</span>
-                    <span class="price-tag">$${offer.price.toFixed(0)}</span>
-                  </div>
-                </div>`;
-            }
+            const rowsHtml = exact.offers_all.map((offer) => `
+              <div class="price-row ${offer === exact.offers_all[0] ? 'cheapest' : ''}">
+                <div class="price-row-header">
+                  <span>✈️ ${offer.airline} — ${offer.is_direct ? 'Directo' : 'Con escala'}</span>
+                  <span class="price-tag">$${offer.price.toFixed(0)}</span>
+                </div>
+              </div>`).join('');
 
             box.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
-              ${renderRow(exact.offer_direct, 'Directo')}
-              ${renderRow(exact.offer_with_stops, 'Con escala')}
+              ${rowsHtml}
               ${linkHtml}`;
             return;
           }
