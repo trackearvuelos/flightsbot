@@ -1134,12 +1134,17 @@
   }
 
   // Muestra el cuadro de verificación y manda el código automáticamente.
-  function promptVerification(message) {
+  // "retryFn" (opcional) es la acción que se vuelve a intentar sola en
+  // cuanto el código se confirma con éxito — así no hay que tocar el
+  // botón original una segunda vez.
+  let pendingRetryFn = null;
+  function promptVerification(message, retryFn) {
     const email = getUserEmail();
     if (!email) {
       showError('Escribe un correo válido arriba primero.');
       return;
     }
+    pendingRetryFn = retryFn || null;
     verificationBox.style.display = 'block';
     codeEntryRow.style.display = 'none';
     requestCodeBtn.style.display = 'none';
@@ -1179,6 +1184,11 @@
         localStorage.setItem('flightbot_session', JSON.stringify({ email, session_token: data.session_token }));
         verificationStatus.textContent = '✅ Correo verificado. Ya puedes ver/borrar tus rutas y conectar Telegram.';
         codeEntryRow.style.display = 'none';
+        if (pendingRetryFn) {
+          const retry = pendingRetryFn;
+          pendingRetryFn = null;
+          retry();
+        }
       } else {
         verificationStatus.textContent = `⚠️ ${data.error || 'Código incorrecto.'}`;
       }
@@ -1221,29 +1231,44 @@
     };
   }
 
-  // Botón "Buscar y guardar esta ruta": llama directo al Worker
-  // (action=track), sin pasar por Telegram para nada. Funciona igual
-  // en una pestaña normal de Chrome que dentro de Telegram.
+  // Botón "Buscar y elegir vuelo": primero consulta AMBAS opciones
+  // (directo y con escala) sin guardar nada todavía — cada una tiene su
+  // propio botón de "Seguir este", así puedes seguir una, la otra, o
+  // las dos si quieres comparar cómo evolucionan.
   const searchFlightBtn = document.getElementById('search-flight-btn');
   const trackResultBox = document.getElementById('track-result-box');
-  searchFlightBtn.addEventListener('click', async () => {
-    const payload = validateAndBuildPayload();
-    if (!payload) return;
 
-    searchFlightBtn.disabled = true;
-    searchFlightBtn.textContent = 'Buscando...';
-    trackResultBox.classList.add('open');
-    trackResultBox.innerHTML = '<div class="calendar-status">Guardando ruta y consultando precio...</div>';
+  function renderOfferPreviewRow(offer, label, flightType, payload) {
+    if (!offer) {
+      return `<div class="calendar-status">Sin vuelos ${label.toLowerCase()} disponibles ahora mismo.</div>`;
+    }
+    const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
+    const perPersonNote = payload.passengers > 1 && offer.price_per_person
+      ? ` ($${offer.price_per_person.toFixed(0)} c/u)`
+      : '';
+    return `
+      <div class="price-row">
+        <div class="price-row-header">
+          <span>✈️ ${label} — ${offer.airline} (${paxLabel})</span>
+          <span class="price-tag">$${offer.price.toFixed(0)}${perPersonNote}</span>
+        </div>
+        <button type="button" class="calendar-btn track-this-btn" data-flight-type="${flightType}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff;">
+          📌 Seguir este vuelo
+        </button>
+      </div>`;
+  }
 
+  async function saveTrackedRoute(payload, flightType, statusBox) {
+    statusBox.innerHTML = '<div class="calendar-status">Guardando...</div>';
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, flight_type: flightType }),
       });
       const data = await resp.json();
       if (!data.success) {
-        trackResultBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'No se pudo guardar la ruta.'}</div>`;
+        statusBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'No se pudo guardar la ruta.'}</div>`;
         return;
       }
 
@@ -1263,10 +1288,56 @@
         ? `<div class="calendar-status">⚠️ No se pudo mandar la notificación: ${data.notification_error}</div>`
         : '';
 
-      trackResultBox.innerHTML = `
+      statusBox.innerHTML = `
         <div class="price-calendar-title">✅ Ruta guardada (ID ${data.route_id}): ${payload.origin} → ${payload.destination}</div>
         ${offerHtml}
         ${notifHtml}`;
+    } catch (err) {
+      statusBox.innerHTML = `<div class="calendar-status">⚠️ Error de conexión: ${err.message}</div>`;
+    }
+  }
+
+  searchFlightBtn.addEventListener('click', async () => {
+    const payload = validateAndBuildPayload();
+    if (!payload) return;
+
+    searchFlightBtn.disabled = true;
+    searchFlightBtn.textContent = 'Buscando...';
+    trackResultBox.classList.add('open');
+    trackResultBox.innerHTML = '<div class="calendar-status">Consultando vuelos directos y con escala...</div>';
+
+    try {
+      const params = new URLSearchParams({
+        action: 'price', origin: payload.origin, destination: payload.destination,
+        depart_date: payload.depart_date, adults: payload.passengers,
+      });
+      if (payload.return_date) params.set('return_date', payload.return_date);
+
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?${params.toString()}`);
+      const data = await resp.json();
+
+      if (!data.success) {
+        trackResultBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'No se encontraron vuelos.'}</div>`;
+        return;
+      }
+
+      const directHtml = renderOfferPreviewRow(data.offer_direct, 'Directo', 'direct', payload);
+      const stopsHtml = renderOfferPreviewRow(data.offer_with_stops, 'Con escala', 'with_stops', payload);
+
+      trackResultBox.innerHTML = `
+        <div class="price-calendar-title">Elige cuál seguir (puedes elegir los dos):</div>
+        ${directHtml}
+        ${stopsHtml}
+        <div id="track-save-status"></div>`;
+
+      trackResultBox.querySelectorAll('.track-this-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          btn.disabled = true;
+          btn.textContent = 'Guardando...';
+          const statusBox = document.getElementById('track-save-status');
+          saveTrackedRoute(payload, btn.dataset.flightType, statusBox);
+        });
+      });
     } catch (err) {
       trackResultBox.innerHTML = `<div class="calendar-status">⚠️ Error de conexión: ${err.message}</div>`;
     } finally {
@@ -1284,7 +1355,7 @@
     const email = getUserEmail();
     if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
     const sessionToken = getValidSessionToken();
-    if (!sessionToken) { promptVerification('Verifica tu correo antes de activar las notificaciones push.'); return; }
+    if (!sessionToken) { promptVerification('Verifica tu correo antes de activar las notificaciones push.', () => enablePushBtn.click()); return; }
 
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       pushStatus.textContent = '⚠️ Tu navegador no soporta notificaciones push.';
@@ -1318,7 +1389,7 @@
       const data = await resp.json();
 
       if (!data.success && data.needs_verification) {
-        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.');
+        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.', () => enablePushBtn.click());
       } else if (!data.success) {
         pushStatus.textContent = `⚠️ ${data.error || 'No se pudo activar.'}`;
       } else if (data.test_sent) {
@@ -1350,7 +1421,7 @@
     const email = getUserEmail();
     if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
     const sessionToken = getValidSessionToken();
-    if (!sessionToken) { promptVerification('Verifica tu correo antes de ver tus rutas guardadas.'); return; }
+    if (!sessionToken) { promptVerification('Verifica tu correo antes de ver tus rutas guardadas.', () => myRoutesBtn.click()); return; }
 
     myRoutesBtn.disabled = true;
     myRoutesBox.classList.add('open');
@@ -1362,7 +1433,7 @@
 
       if (!data.success && data.needs_verification) {
         myRoutesBox.classList.remove('open');
-        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.');
+        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.', () => myRoutesBtn.click());
         return;
       }
 
@@ -1377,6 +1448,7 @@
       for (const r of routes) {
         const tripLabel = r.return_date ? `${r.depart_date} → ${r.return_date}` : `${r.depart_date} (solo ida)`;
         const paxLabel = r.passengers === 1 ? '1 pasajero' : `${r.passengers} pasajeros`;
+        const flightTypeLabel = r.flight_type === 'direct' ? ' · solo directos' : r.flight_type === 'with_stops' ? ' · con escala' : '';
         let priceLabel = 'Sin precio aún';
         if (r.current_price) {
           const checkedDate = r.last_checked_at ? new Date(r.last_checked_at).toLocaleDateString('es') : '';
@@ -1389,7 +1461,7 @@
         html += `
           <div class="price-row">
             <div class="price-row-header">
-              <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel})</span>
+              <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel}${flightTypeLabel})</span>
             </div>
             <div class="calendar-status" style="padding:0;">${priceLabel}</div>
             ${routeLink ? `<a class="book-link" href="${routeLink}" target="_blank" rel="noopener">Reservar →</a>` : ''}
