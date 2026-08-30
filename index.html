@@ -234,6 +234,21 @@
     color: var(--tg-theme-link-color, #2481cc);
     text-decoration: none;
   }
+  .qr-box {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 12px;
+    border: 1px solid var(--tg-theme-hint-color, #dddddd);
+    border-radius: 12px;
+  }
+  .qr-box img {
+    border-radius: 8px;
+  }
+  .qr-box p {
+    margin: 8px 0 0 0;
+    font-size: 12px;
+    color: var(--tg-theme-hint-color, #888888);
+  }
   .month-grid-title {
     text-align: center;
     font-weight: 700;
@@ -321,6 +336,11 @@
 
   <h1>✈️ Trackear Vuelos</h1>
   <p class="subtitle">Escribe la ciudad, elige las fechas y te aviso si el precio baja.</p>
+
+  <div class="qr-box">
+    <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" width="140" height="140">
+    <p>📱 Escanea con tu celular para abrirlo ahí, y luego agrégalo a tu pantalla de inicio como una app.</p>
+  </div>
 
   <div class="field" id="verification-box" style="display:none;">
     <div class="calendar-status" id="verification-status"></div>
