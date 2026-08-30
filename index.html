@@ -1191,7 +1191,7 @@
       const data = await resp.json();
       if (data.success) {
         localStorage.setItem('flightbot_session', JSON.stringify({ email, session_token: data.session_token }));
-        verificationStatus.textContent = '✅ Correo verificado. Ya puedes ver/borrar tus rutas y conectar Telegram.';
+        verificationStatus.textContent = '✅ Correo verificado. Ya puedes ver/borrar tus rutas.';
         codeEntryRow.style.display = 'none';
         if (pendingRetryFn) {
           const retry = pendingRetryFn;
