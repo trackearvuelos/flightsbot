@@ -242,6 +242,29 @@
     color: var(--tg-theme-link-color, #2481cc);
     text-decoration: none;
   }
+  .top-services-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .top-service-card {
+    flex: 1;
+    display: block;
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: 12px;
+    background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    border: 1px solid var(--tg-theme-hint-color, #dddddd);
+    color: var(--tg-theme-text-color, #111111);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .top-service-card:active {
+    background: var(--tg-theme-button-color, #2481cc);
+    color: #ffffff;
+  }
   .qr-box {
     position: fixed;
     top: 12px;
@@ -457,12 +480,60 @@
     opacity: 0;
     pointer-events: none;
   }
+  #splash-icon-wrap {
+    position: relative;
+    width: 96px;
+    height: 96px;
+  }
+  #fold-paper {
+    position: absolute;
+    inset: 0;
+    width: 96px;
+    height: 96px;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2));
+    animation: fold-paper-fade-out 0.5s ease forwards;
+    animation-delay: 3s;
+  }
+  #fold-line-1 {
+    animation: draw-fold-line 0.8s ease forwards;
+    animation-delay: 0.4s;
+  }
+  #fold-line-2 {
+    animation: draw-fold-line 0.8s ease forwards;
+    animation-delay: 1.2s;
+  }
+  #fold-line-3 {
+    animation: draw-fold-line-3 0.8s ease forwards;
+    animation-delay: 2.0s;
+  }
+  @keyframes draw-fold-line {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes draw-fold-line-3 {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes fold-paper-fade-out {
+    to { opacity: 0; transform: scale(0.85); }
+  }
   #splash-icon {
+    position: absolute;
+    inset: 0;
     width: 96px;
     height: 96px;
     border-radius: 22px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    animation: splash-pop 0.5s ease;
+    opacity: 0;
+    animation: splash-icon-assemble 0.6s ease forwards, splash-icon-hover 1.2s ease-in-out infinite;
+    animation-delay: 3s, 4s;
+  }
+  @keyframes splash-icon-assemble {
+    0% { opacity: 0; transform: scale(0.6) rotate(-12deg); }
+    60% { opacity: 1; transform: scale(1.1) rotate(4deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes splash-icon-hover {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(-3deg); }
   }
   #splash-title {
     color: #ffffff;
@@ -470,9 +541,16 @@
     font-weight: 700;
     letter-spacing: 0.3px;
   }
-  @keyframes splash-pop {
-    0% { transform: scale(0.7); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+  #splash-rotating-text {
+    color: rgba(255,255,255,0.85);
+    font-size: 14px;
+    font-weight: 600;
+    height: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #splash-rotating-text.visible {
+    opacity: 1;
   }
 </style>
 </head>
@@ -503,12 +581,30 @@
   </script>
 
   <div id="splash-screen">
-    <img id="splash-icon" src="icons/icon-512.png" alt="Trackear Vuelos">
+    <div id="splash-icon-wrap">
+      <svg id="fold-paper" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="10" width="100" height="100" rx="8" fill="#ffffff" opacity="0.95"/>
+        <line id="fold-line-1" x1="10" y1="10" x2="110" y2="110" stroke="#8fb9d9" stroke-width="2.5" stroke-dasharray="160" stroke-dashoffset="160"/>
+        <line id="fold-line-2" x1="110" y1="10" x2="10" y2="110" stroke="#8fb9d9" stroke-width="2.5" stroke-dasharray="160" stroke-dashoffset="160"/>
+        <line id="fold-line-3" x1="60" y1="10" x2="60" y2="110" stroke="#2481cc" stroke-width="3" stroke-dasharray="120" stroke-dashoffset="120"/>
+      </svg>
+      <img id="splash-icon" src="icons/icon-512.png" alt="Trackear Vuelos">
+    </div>
     <div id="splash-title">Trackear Vuelos</div>
+    <div id="splash-rotating-text"></div>
   </div>
 
   <h1>✈️ Trackear Vuelos</h1>
   <p class="subtitle">✈️ Encuentra tu vuelo y nosotros vigilamos el precio.</p>
+
+  <div class="top-services-row">
+    <a href="https://ektatraveling.tpk.lu/IjpTBuOL" target="_blank" rel="noopener" class="top-service-card">
+      🛡️<br>Seguros
+    </a>
+    <a href="https://airhelp.tpk.lu/RgybwSak" target="_blank" rel="noopener" class="top-service-card">
+      🧳<br>¿Se retrasó tu vuelo? Te ayudamos
+    </a>
+  </div>
 
   <div class="qr-box" id="qr-badge" title="Toca para agrandar y escanear">
     <div class="qr-card">
@@ -621,6 +717,26 @@
       setTimeout(() => splash.remove(), 500);
     }, 5000);
 
+    // Palabras que van apareciendo y desapareciendo durante los 5
+    // segundos del splash, para mostrar todo lo que cubre el sitio
+    // (no solo vuelos).
+    const rotatingWords = ['Viajes', 'Seguros', 'Retrasos de vuelo', 'Entradas', 'Hoteles', 'Autos'];
+    const rotatingEl = document.getElementById('splash-rotating-text');
+    let wordIndex = 0;
+    const msPerWord = 5000 / rotatingWords.length;
+
+    function showNextWord() {
+      rotatingEl.classList.remove('visible');
+      setTimeout(() => {
+        rotatingEl.textContent = rotatingWords[wordIndex % rotatingWords.length];
+        rotatingEl.classList.add('visible');
+        wordIndex++;
+      }, 150); // pequeña pausa para que se note el "desaparece y aparece"
+    }
+    showNextWord();
+    const rotatingInterval = setInterval(showNextWord, msPerWord);
+    setTimeout(() => clearInterval(rotatingInterval), 5000);
+
     // Registramos el Service Worker (necesario para poder recibir
     // notificaciones push reales, incluso con la app cerrada).
     if ('serviceWorker' in navigator) {
@@ -728,6 +844,13 @@
   // Link de afiliado a EKTA (seguro de viaje) — comisión del 25%, la más
   // alta de todo lo que tenemos. Se ofrece como complemento opcional.
   const EKTA_INSURANCE_LINK = "https://ektatraveling.tpk.lu/IjpTBuOL";
+
+  // Link de afiliado a AirHelp (reclamos de compensación por vuelos
+  // retrasados/cancelados) — comisión del 15-16.6% del monto reclamado.
+  const AIRHELP_LINK = "https://airhelp.tpk.lu/RgybwSak";
+
+  // Segunda opción de compensación por vuelos (misma idea que AirHelp).
+  const COMPENSAIR_LINK = "https://compensair.tpk.lu/uhrwobDL";
 
   // Llave pública VAPID (no es secreta — identifica a nuestro servidor
   // ante el navegador para las notificaciones push). La privada vive
@@ -1105,7 +1228,7 @@
       }
 
       const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
-      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a>` : '';
+      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ¿Vuelo retrasado/cancelado? Reclama aquí</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 (o también aquí)</a>` : '';
       const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
       const perPersonNote = data.offer && payload.passengers > 1 && data.offer.price_per_person
         ? `<div class="calendar-status" style="padding:0;">($${data.offer.price_per_person.toFixed(0)} por persona × ${payload.passengers})</div>`
@@ -1434,7 +1557,7 @@
               ? '<div class="calendar-status">📅 Precio aproximado (no hay calendario completo para esta ruta, pero sí este dato).</div>'
               : '';
             const link = buildAffiliateLink(origin, destination, exactDepart, exactReturn, passengers);
-            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a>` : '';
+            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ¿Vuelo retrasado/cancelado? Reclama aquí</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 (o también aquí)</a>` : '';
             box.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
               <div class="price-row cheapest">
