@@ -209,6 +209,14 @@
     border-radius: 4px;
     transition: width 0.3s ease;
   }
+  .row-book-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tg-theme-link-color, #2481cc);
+    text-decoration: none;
+  }
   .calendar-status {
     font-size: 13px;
     color: var(--tg-theme-hint-color, #888888);
@@ -407,6 +415,16 @@
     font-size: 16px;
     text-align: center;
   }
+  #access-remember-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 220px;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    text-align: left;
+    margin: 2px 0;
+  }
   #access-code-submit {
     width: 220px;
     padding: 12px;
@@ -469,6 +487,10 @@
     <div id="access-gate-title">Trackear Vuelos</div>
     <p>Todavía en pruebas — escribe el código de acceso que te compartieron.</p>
     <input type="text" id="access-code-input" placeholder="Código de acceso" autocomplete="off">
+    <label id="access-remember-label">
+      <input type="checkbox" id="access-remember-checkbox">
+      Recordar en este dispositivo (no marcar en computadoras públicas)
+    </label>
     <button type="button" id="access-code-submit">Entrar</button>
     <div id="access-gate-error"></div>
   </div>
@@ -664,6 +686,7 @@
   const accessCodeInput = document.getElementById('access-code-input');
   const accessCodeSubmit = document.getElementById('access-code-submit');
   const accessGateError = document.getElementById('access-gate-error');
+  const accessRememberCheckbox = document.getElementById('access-remember-checkbox');
 
   async function trySubmitAccessCode() {
     const code = accessCodeInput.value.trim();
@@ -679,7 +702,12 @@
       });
       const data = await resp.json();
       if (data.success) {
-        localStorage.setItem('flightbot_access_granted', 'true');
+        // Solo lo recordamos si la persona marcó la casilla — así, en
+        // una computadora pública, basta con NO marcarla para que no
+        // quede nada guardado ahí para el siguiente que la use.
+        if (accessRememberCheckbox.checked) {
+          localStorage.setItem('flightbot_access_granted', 'true');
+        }
         document.getElementById('access-gate').style.display = 'none';
       } else {
         accessGateError.textContent = data.error || 'Código incorrecto.';
@@ -1474,12 +1502,17 @@
       }
 
       // Lista con barras de colores para todos los resultados. Cada fila
-      // se puede tocar para seleccionar esa fecha, y agregamos un botón
-      // de reserva para el día más barato.
+      // tiene su propio link de reserva — así no dependes solo del día
+      // más barato, puedes reservar cualquier fecha que te convenga.
       for (const row of results) {
         const isCheapest = row === displayCheapest;
         const color = priceColor(row.price, displayCheapest.price, displayMostExpensive.price);
         const width = barWidth(row.price, displayCheapest.price, displayMostExpensive.price);
+
+        const rowBookDepart = isReturnCalendar ? departDate : row.date;
+        const rowBookReturn = isReturnCalendar ? row.date : fixedDate;
+        const rowLink = buildAffiliateLink(origin, destination, rowBookDepart, rowBookReturn, passengers);
+
         html += `
           <div class="price-row ${isCheapest ? 'cheapest' : ''}" data-date="${row.date}">
             <div class="price-row-header">
@@ -1489,15 +1522,8 @@
             <div class="price-bar-track">
               <div class="price-bar-fill" style="width:${width}%; background:${color};"></div>
             </div>
+            ${rowLink ? `<a class="row-book-link" href="${rowLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Reservar esta fecha →</a>` : ''}
           </div>`;
-      }
-
-      // Link de reserva para el día más barato encontrado.
-      const bookDepart = isReturnCalendar ? departDate : displayCheapest.date;
-      const bookReturn = isReturnCalendar ? displayCheapest.date : fixedDate;
-      const cheapestLink = buildAffiliateLink(origin, destination, bookDepart, bookReturn, passengers);
-      if (cheapestLink) {
-        html += `<a class="book-link" href="${cheapestLink}" target="_blank" rel="noopener">Reservar (día más barato: ${displayCheapest.date}) →</a>`;
       }
 
       box.innerHTML = html;
