@@ -1253,6 +1253,11 @@
       ? ` ($${offer.price_per_person.toFixed(0)} c/u)`
       : '';
     const stopsLabel = offer.is_direct ? 'Directo' : 'Con escala';
+    // Nota honesta: Aviasales no nos deja armar un link que filtre por
+    // una aerolínea específica — este "Reservar" te lleva a la búsqueda
+    // general de esta ruta/fechas, donde puedes elegir esa aerolínea tú
+    // mismo si aparece ahí también.
+    const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
     return `
       <div class="price-row">
         <div class="price-row-header">
@@ -1262,6 +1267,7 @@
         <button type="button" class="calendar-btn track-this-btn" data-flight-type="${offer.is_direct ? 'direct' : 'with_stops'}" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff;">
           📌 Seguir este vuelo
         </button>
+        ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Reservar (buscar ${offer.airline} ahí) →</a>` : ''}
       </div>`;
   }
 
@@ -1660,21 +1666,27 @@
         try {
           const exact = await fetchExactPrice(origin, destination, exactDepart, exactReturn, passengers);
           if (exact.success && exact.offers_all && exact.offers_all.length > 0) {
-            const link = buildAffiliateLink(origin, destination, exactDepart, exactReturn, passengers);
-            const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ¿Vuelo retrasado/cancelado? Reclama aquí</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 (o también aquí)</a>` : '';
-
-            const rowsHtml = exact.offers_all.map((offer) => `
-              <div class="price-row ${offer === exact.offers_all[0] ? 'cheapest' : ''}">
-                <div class="price-row-header">
-                  <span>✈️ ${offer.airline} — ${offer.is_direct ? 'Directo' : 'Con escala'}</span>
-                  <span class="price-tag">$${offer.price.toFixed(0)}</span>
-                </div>
-              </div>`).join('');
+            const fallbackPayload = {
+              origin, destination, depart_date: exactDepart, return_date: exactReturn, passengers,
+            };
+            const rowsHtml = exact.offers_all.map((offer) => renderOfferPreviewRow(offer, fallbackPayload)).join('');
 
             box.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
               ${rowsHtml}
-              ${linkHtml}`;
+              <div id="track-save-status"></div>`;
+
+            box.querySelectorAll('.track-this-btn').forEach((btn) => {
+              btn.addEventListener('click', () => {
+                const email = getUserEmail();
+                if (!email) { showError('Escribe un correo válido arriba primero para poder seguir un vuelo.'); return; }
+                btn.disabled = true;
+                btn.textContent = 'Guardando...';
+                const statusBox = document.getElementById('track-save-status');
+                const trackPayload = { ...fallbackPayload, email, max_price: null, notify_channel: selectedChannel };
+                saveTrackedRoute(trackPayload, btn.dataset.flightType, btn.dataset.airline, statusBox);
+              });
+            });
             return;
           }
         } catch (innerErr) {
