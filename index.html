@@ -1366,12 +1366,14 @@
         const tripLabel = r.return_date ? `${r.depart_date} → ${r.return_date}` : `${r.depart_date} (solo ida)`;
         const paxLabel = r.passengers === 1 ? '1 pasajero' : `${r.passengers} pasajeros`;
         const priceLabel = r.lowest_price ? `Mínimo visto (total): $${Math.round(r.lowest_price)}` : 'Sin precio aún';
+        const routeLink = buildAffiliateLink(r.origin, r.destination, r.depart_date, r.return_date, r.passengers);
         html += `
           <div class="price-row">
             <div class="price-row-header">
               <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel})</span>
             </div>
             <div class="calendar-status" style="padding:0;">${priceLabel}</div>
+            ${routeLink ? `<a class="book-link" href="${routeLink}" target="_blank" rel="noopener">Reservar →</a>` : ''}
             <button type="button" class="channel-option" data-remove-id="${r.id}" style="margin-top:6px; width:100%;">🗑️ Eliminar</button>
           </div>`;
       }
