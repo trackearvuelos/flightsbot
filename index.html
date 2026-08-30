@@ -374,9 +374,47 @@
     border-color: var(--tg-theme-button-color, #2481cc);
     font-weight: 600;
   }
+  #splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: linear-gradient(160deg, #2481cc 0%, #1a6aa8 100%);
+    transition: opacity 0.5s ease;
+  }
+  #splash-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+  #splash-icon {
+    width: 96px;
+    height: 96px;
+    border-radius: 22px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    animation: splash-pop 0.5s ease;
+  }
+  #splash-title {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  @keyframes splash-pop {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 </style>
 </head>
 <body>
+
+  <div id="splash-screen">
+    <img id="splash-icon" src="icons/icon-512.png" alt="Trackear Vuelos">
+    <div id="splash-title">Trackear Vuelos</div>
+  </div>
 
   <h1>✈️ Trackear Vuelos</h1>
   <p class="subtitle">Escribe la ciudad, elige las fechas y te aviso si el precio baja.</p>
@@ -467,6 +505,19 @@
   const tg = window.Telegram.WebApp;
   tg.ready();
   tg.expand();
+
+  // Pantalla de bienvenida: se ve un momento y se desvanece hacia el
+  // buscador. Funciona igual dentro de Telegram, en el navegador, y en
+  // la app instalada en la pantalla de inicio (a diferencia de los
+  // splash screens nativos de iOS/Android, este sí lo controlamos
+  // nosotros por completo).
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const splash = document.getElementById('splash-screen');
+      splash.classList.add('fade-out');
+      setTimeout(() => splash.remove(), 500);
+    }, 1200);
+  });
 
   // --- Servidor intermedio (Cloudflare Worker) para el calendario de precios ---
   // Ya NO ponemos el token de Travelpayouts aquí — vive seguro en el Worker.
