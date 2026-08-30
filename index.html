@@ -1026,7 +1026,16 @@
   document.getElementById('depart-date').value = today;
 
   document.getElementById('depart-date').addEventListener('change', (e) => {
-    document.getElementById('return-date').min = e.target.value;
+    const returnDateInput = document.getElementById('return-date');
+    returnDateInput.min = e.target.value;
+    // Si el campo de vuelta está vacío, o su valor quedó antes de la
+    // nueva fecha de ida, le ponemos un valor por defecto en la MISMA
+    // fecha de ida — así, cuando el navegador abra su calendario, se
+    // abre directo en ese mes (si no, por defecto abre en el mes
+    // actual, que puede quedar "un mes antes" del que ya elegiste).
+    if (!returnDateInput.value || returnDateInput.value < e.target.value) {
+      returnDateInput.value = e.target.value;
+    }
   });
 
   // Checkbox "solo ida"
@@ -1677,7 +1686,11 @@
           } else {
             document.getElementById('depart-date').value = row.dataset.date;
             if (!oneWayCheckbox.checked) {
-              document.getElementById('return-date').min = row.dataset.date;
+              const returnDateInput = document.getElementById('return-date');
+              returnDateInput.min = row.dataset.date;
+              if (!returnDateInput.value || returnDateInput.value < row.dataset.date) {
+                returnDateInput.value = row.dataset.date;
+              }
             }
           }
         });
