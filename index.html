@@ -491,8 +491,11 @@
     width: 96px;
     height: 96px;
     filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2));
-    animation: fold-paper-fade-out 1s ease forwards;
-    animation-delay: 6s;
+    transition: opacity 1s ease, transform 1s ease;
+  }
+  #fold-paper.hide-fold {
+    opacity: 0;
+    transform: scale(0.85);
   }
   #fold-line-1 {
     animation: draw-fold-line 1.6s ease forwards;
@@ -512,9 +515,6 @@
   @keyframes draw-fold-line-3 {
     to { stroke-dashoffset: 0; }
   }
-  @keyframes fold-paper-fade-out {
-    to { opacity: 0; transform: scale(0.85); }
-  }
   #splash-icon {
     position: absolute;
     inset: 0;
@@ -523,13 +523,15 @@
     border-radius: 22px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     opacity: 0;
-    animation: splash-icon-assemble 1.2s ease forwards, splash-icon-hover 1.2s ease-in-out infinite;
-    animation-delay: 6s, 8s;
+    transform: scale(0.6) rotate(-12deg);
+    transition: opacity 0.6s ease, transform 0.6s ease;
   }
-  @keyframes splash-icon-assemble {
-    0% { opacity: 0; transform: scale(0.6) rotate(-12deg); }
-    60% { opacity: 1; transform: scale(1.1) rotate(4deg); }
-    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  #splash-icon.assembled {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  #splash-icon.hovering {
+    animation: splash-icon-hover 1.2s ease-in-out infinite;
   }
   @keyframes splash-icon-hover {
     0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -727,6 +729,22 @@
       splash.classList.add('fade-out');
       setTimeout(() => splash.remove(), 500);
     }, 10000);
+
+    // El "armado" del avión lo controlamos aquí con JavaScript (en vez
+    // de animation-delay combinado en CSS) porque Safari/iOS no siempre
+    // respeta bien varios retrasos de animación juntos en un mismo
+    // elemento — así garantizamos que se vea igual en cualquier
+    // navegador.
+    setTimeout(() => {
+      const foldPaper = document.getElementById('fold-paper');
+      const icon = document.getElementById('splash-icon');
+      if (foldPaper) foldPaper.classList.add('hide-fold');
+      if (icon) icon.classList.add('assembled');
+    }, 6000);
+    setTimeout(() => {
+      const icon = document.getElementById('splash-icon');
+      if (icon) icon.classList.add('hovering');
+    }, 6600);
 
     // Palabras que van apareciendo y desapareciendo durante los 10
     // segundos del splash, para mostrar todo lo que cubre el sitio
