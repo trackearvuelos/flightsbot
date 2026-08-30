@@ -497,7 +497,7 @@
     <input type="email" id="user-email" placeholder="tu@correo.com">
   </div>
 
-  <button type="button" class="calendar-btn" id="enable-push-btn">
+  <button type="button" class="calendar-btn" id="enable-push-btn" style="display:none;">
     🔔 Activar notificaciones push
   </button>
   <div class="calendar-status" id="push-status"></div>
@@ -537,6 +537,17 @@
       navigator.serviceWorker.register('service-worker.js').catch((err) => {
         console.error('No se pudo registrar el Service Worker:', err);
       });
+    }
+
+    // El botón de "Activar notificaciones push" solo aparece cuando la
+    // app ya está instalada (modo standalone) — no tiene sentido
+    // ofrecerlo en una pestaña normal del navegador, ya que ahí ese tipo
+    // de notificación es menos confiable/consistente entre navegadores.
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true; // Safari/iOS
+    if (isStandalone) {
+      document.getElementById('enable-push-btn').style.display = 'block';
     }
   });
 
