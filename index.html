@@ -1727,15 +1727,28 @@
     giveIdeasBtn.disabled = true;
     giveIdeasBtn.textContent = 'Buscando ideas...';
     ideasBox.classList.add('open');
-    ideasBox.innerHTML = '<div class="calendar-status">Revisando destinos al azar...</div>';
+    ideasBox.innerHTML = '<div class="calendar-status">Revisando destinos al azar (ida y vuelta)...</div>';
 
+    // Para cada destino, revisamos el calendario de IDA y el de VUELTA
+    // por separado (mismo mes) y sumamos el día más barato de cada uno
+    // — igual que hicimos antes con la búsqueda por mes, ya que no se
+    // puede pedir "cualquier combinación" en una sola consulta.
     const results = [];
     for (const dest of destinations) {
       try {
-        const calResults = await fetchPriceCalendar(origin, dest, month, null, 'departure_date', passengers);
-        if (calResults.length > 0) {
-          const cheapest = calResults.reduce((a, b) => (a.price < b.price ? a : b));
-          results.push({ destination: dest, date: cheapest.date, price: cheapest.price });
+        const idaResults = await fetchPriceCalendar(origin, dest, month, null, 'departure_date', passengers);
+        await new Promise((r) => setTimeout(r, 600));
+        const vueltaResults = await fetchPriceCalendar(dest, origin, month, null, 'departure_date', passengers);
+
+        if (idaResults.length > 0 && vueltaResults.length > 0) {
+          const cheapestIda = idaResults.reduce((a, b) => (a.price < b.price ? a : b));
+          const cheapestVuelta = vueltaResults.reduce((a, b) => (a.price < b.price ? a : b));
+          results.push({
+            destination: dest,
+            departDate: cheapestIda.date,
+            returnDate: cheapestVuelta.date,
+            price: cheapestIda.price + cheapestVuelta.price,
+          });
         }
       } catch (e) {
         // si un destino falla, seguimos con los demás sin romper todo
@@ -1747,16 +1760,16 @@
       ideasBox.innerHTML = '<div class="calendar-status">No encontramos datos en caché para estos destinos ahora mismo. Intenta de nuevo en un momento.</div>';
     } else {
       results.sort((a, b) => a.price - b.price);
-      let html = `<div class="price-calendar-title">✈️ Ideas desde ${origin.toUpperCase()}</div>`;
+      let html = `<div class="price-calendar-title">✈️ Ideas desde ${origin.toUpperCase()} (ida y vuelta)</div>`;
       for (const r of results) {
-        const link = buildAffiliateLink(origin, r.destination, r.date, null, passengers);
+        const link = buildAffiliateLink(origin, r.destination, r.departDate, r.returnDate, passengers);
         html += `
           <div class="price-row">
             <div class="price-row-header">
-              <span>${origin.toUpperCase()} → ${r.destination} (${r.date})</span>
+              <span>${origin.toUpperCase()} → ${r.destination} (${r.departDate} → ${r.returnDate})</span>
               <span class="price-tag">$${r.price.toFixed(0)}</span>
             </div>
-            ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Reservar esta fecha →</a>` : ''}
+            ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Reservar estas fechas →</a>` : ''}
           </div>`;
       }
       ideasBox.innerHTML = html;
