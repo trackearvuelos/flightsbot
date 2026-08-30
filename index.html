@@ -338,6 +338,14 @@
     height: 56px;
     border-radius: 4px;
   }
+  .qr-badge-label {
+    text-align: center;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--brand-blue);
+    margin-top: 3px;
+  }
   /* El QR chico de la esquina es solo una insignia — demasiado pequeño
      en pantalla para que una cámara lo enfoque bien. Al tocarlo, se abre
      este modal con el QR a tamaño real, sí escaneable de verdad. */
@@ -601,6 +609,7 @@
     <div class="qr-card">
       <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos">
     </div>
+    <div class="qr-badge-label">Clickea</div>
   </div>
 
   <div id="qr-modal-overlay">
