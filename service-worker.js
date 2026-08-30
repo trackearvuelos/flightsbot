@@ -10,6 +10,19 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// IMPORTANTE: nunca "cacheamos" el sitio — cada vez que la app se abre
+// (con internet disponible), buscamos la versión más reciente en el
+// servidor en vez de usar una copia vieja guardada. Así, cuando
+// agreguemos botones o cambios nuevos, cualquiera que abra la app
+// instalada los ve de inmediato, sin tener que reinstalarla.
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
+    );
+  }
+});
+
 // Cuando llega una notificación push del servidor, la mostramos.
 self.addEventListener('push', (event) => {
   let data = { title: 'Trackear Vuelos', body: 'Tienes una nueva alerta.' };
