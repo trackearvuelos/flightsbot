@@ -1385,7 +1385,14 @@
       for (const r of routes) {
         const tripLabel = r.return_date ? `${r.depart_date} → ${r.return_date}` : `${r.depart_date} (solo ida)`;
         const paxLabel = r.passengers === 1 ? '1 pasajero' : `${r.passengers} pasajeros`;
-        const priceLabel = r.lowest_price ? `Mínimo visto (total): $${Math.round(r.lowest_price)}` : 'Sin precio aún';
+        let priceLabel = 'Sin precio aún';
+        if (r.current_price) {
+          const checkedDate = r.last_checked_at ? new Date(r.last_checked_at).toLocaleDateString('es') : '';
+          priceLabel = `Precio actual (${checkedDate}): $${Math.round(r.current_price)}`;
+          if (r.lowest_price && Math.round(r.lowest_price) !== Math.round(r.current_price)) {
+            priceLabel += ` · Mínimo visto: $${Math.round(r.lowest_price)}`;
+          }
+        }
         const routeLink = buildAffiliateLink(r.origin, r.destination, r.depart_date, r.return_date, r.passengers);
         html += `
           <div class="price-row">
