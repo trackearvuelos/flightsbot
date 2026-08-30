@@ -243,23 +243,23 @@
     text-decoration: none;
   }
   .top-services-row {
-    display: flex;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
     margin-bottom: 20px;
   }
   .top-service-card {
-    flex: 1;
     display: block;
     text-align: center;
-    padding: 12px 8px;
+    padding: 10px 6px;
     border-radius: 12px;
     background: var(--tg-theme-secondary-bg-color, #f5f5f5);
     border: 1px solid var(--tg-theme-hint-color, #dddddd);
     color: var(--tg-theme-text-color, #111111);
     text-decoration: none;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.3;
   }
   .top-service-card:active {
     background: var(--tg-theme-button-color, #2481cc);
@@ -604,6 +604,15 @@
     <a href="https://airhelp.tpk.lu/RgybwSak" target="_blank" rel="noopener" class="top-service-card">
       🧳<br>¿Se retrasó tu vuelo? Te ayudamos
     </a>
+    <a href="https://tiqets.tpk.lu/To1czhFY" target="_blank" rel="noopener" class="top-service-card">
+      🎟️<br>Entradas
+    </a>
+    <a href="https://getrentacar.tpk.lu/gAjVHyvJ" target="_blank" rel="noopener" class="top-service-card">
+      🚗<br>Autos
+    </a>
+    <a href="https://kkday.tpk.lu/X7dTEzSr" target="_blank" rel="noopener" class="top-service-card">
+      🏨<br>Estadías
+    </a>
   </div>
 
   <div class="qr-box" id="qr-badge" title="Toca para agrandar y escanear">
@@ -706,13 +715,15 @@
   tg.expand();
 
   // Pantalla de bienvenida: se ve un momento y se desvanece hacia el
-  // buscador. Funciona igual dentro de Telegram, en el navegador, y en
-  // la app instalada en la pantalla de inicio (a diferencia de los
-  // splash screens nativos de iOS/Android, este sí lo controlamos
-  // nosotros por completo).
-  window.addEventListener('load', () => {
+  // buscador. La arrancamos manualmente (no en window.load) porque si
+  // la puerta de acceso está activa, el splash debe empezar cuando la
+  // persona DESBLOQUEA, no desde que cargó la página — si no, el
+  // temporizador corre de fondo mientras escribe el código, y para
+  // cuando entra, el splash ya terminó y desapareció sin que lo viera.
+  function startSplashSequence() {
     setTimeout(() => {
       const splash = document.getElementById('splash-screen');
+      if (!splash) return;
       splash.classList.add('fade-out');
       setTimeout(() => splash.remove(), 500);
     }, 10000);
@@ -736,6 +747,16 @@
     showNextWord();
     const rotatingInterval = setInterval(showNextWord, msPerWord);
     setTimeout(() => clearInterval(rotatingInterval), 10000);
+  }
+
+  window.addEventListener('load', () => {
+    // Si ya tenías el acceso guardado de una visita anterior, la puerta
+    // ni siquiera se mostró — el splash puede arrancar de inmediato,
+    // como siempre. Si NO, esperamos a que se desbloquee (ver
+    // trySubmitAccessCode) para arrancarlo ahí en vez de aquí.
+    if (localStorage.getItem('flightbot_access_granted') === 'true') {
+      startSplashSequence();
+    }
 
     // Registramos el Service Worker (necesario para poder recibir
     // notificaciones push reales, incluso con la app cerrada).
@@ -825,6 +846,7 @@
           localStorage.setItem('flightbot_access_granted', 'true');
         }
         document.getElementById('access-gate').style.display = 'none';
+        startSplashSequence(); // recién ahora, no desde que cargó la página
       } else {
         accessGateError.textContent = data.error || 'Código incorrecto.';
       }
