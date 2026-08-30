@@ -241,6 +241,7 @@
     z-index: 100;
     padding: 6px;
     border-radius: 10px;
+    cursor: pointer;
     /* Mismo fondo tipo "cielo", pero mucho más compacto ahora que vive
        en la esquina como una insignia pequeña. */
     background:
@@ -259,6 +260,39 @@
     width: 56px;
     height: 56px;
     border-radius: 4px;
+  }
+  /* El QR chico de la esquina es solo una insignia — demasiado pequeño
+     en pantalla para que una cámara lo enfoque bien. Al tocarlo, se abre
+     este modal con el QR a tamaño real, sí escaneable de verdad. */
+  #qr-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.6);
+    align-items: center;
+    justify-content: center;
+  }
+  #qr-modal-overlay.open {
+    display: flex;
+  }
+  #qr-modal-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    max-width: 90vw;
+  }
+  #qr-modal-img {
+    width: 240px;
+    height: 240px;
+    max-width: 100%;
+    border-radius: 8px;
+  }
+  #qr-modal-card p {
+    margin: 14px 0;
+    font-size: 14px;
+    color: #444444;
   }
   .month-grid-title {
     text-align: center;
@@ -384,11 +418,19 @@
   </div>
 
   <h1>✈️ Trackear Vuelos</h1>
-  <p class="subtitle">Escribe la ciudad, elige las fechas y te aviso si el precio baja.</p>
+  <p class="subtitle">✈️ Encuentra tu vuelo y nosotros vigilamos el precio.</p>
 
-  <div class="qr-box" title="Escanea con tu celular y luego agrégalo a tu pantalla de inicio como una app">
+  <div class="qr-box" id="qr-badge" title="Toca para agrandar y escanear">
     <div class="qr-card">
       <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos">
+    </div>
+  </div>
+
+  <div id="qr-modal-overlay">
+    <div id="qr-modal-card">
+      <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" id="qr-modal-img">
+      <p>📱 Escanea con la cámara de tu celular</p>
+      <button type="button" class="calendar-btn" id="qr-modal-close">Cerrar</button>
     </div>
   </div>
 
@@ -483,6 +525,22 @@
       splash.classList.add('fade-out');
       setTimeout(() => splash.remove(), 500);
     }, 5000);
+  });
+
+  // El QR pequeño de la esquina es solo una insignia — al tocarlo, se
+  // abre agrandado en un modal para que sí se pueda escanear de verdad.
+  const qrBadge = document.getElementById('qr-badge');
+  const qrModalOverlay = document.getElementById('qr-modal-overlay');
+  const qrModalClose = document.getElementById('qr-modal-close');
+
+  qrBadge.addEventListener('click', () => {
+    qrModalOverlay.classList.add('open');
+  });
+  qrModalClose.addEventListener('click', () => {
+    qrModalOverlay.classList.remove('open');
+  });
+  qrModalOverlay.addEventListener('click', (e) => {
+    if (e.target === qrModalOverlay) qrModalOverlay.classList.remove('open');
   });
 
   // --- Servidor intermedio (Cloudflare Worker) para el calendario de precios ---
@@ -719,26 +777,11 @@
     userEmailInput.value = savedSession.email;
   }
 
-  // Muestra el cuadro de verificación y prepara el flujo para
-  // conseguir un session_token válido para el correo actual.
-  function promptVerification(message) {
-    const email = getUserEmail();
-    if (!email) {
-      showError('Escribe un correo válido arriba primero.');
-      return;
-    }
-    verificationBox.style.display = 'block';
-    verificationStatus.textContent = message || 'Necesitas verificar tu correo antes de continuar.';
-    codeEntryRow.style.display = 'none';
-    verificationBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  requestCodeBtn.addEventListener('click', async () => {
-    const email = getUserEmail();
-    if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
-
-    requestCodeBtn.disabled = true;
-    requestCodeBtn.textContent = 'Mandando código...';
+  // Manda el código de verificación al correo. Se llama automáticamente
+  // en cuanto se necesita verificar (ya no hay que tocar un botón aparte
+  // para pedirlo la primera vez).
+  async function sendVerificationCode(email) {
+    verificationStatus.textContent = 'Enviando código...';
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=request_verification`, {
         method: 'POST',
@@ -747,17 +790,43 @@
       });
       const data = await resp.json();
       if (data.success) {
-        verificationStatus.textContent = '📧 Te mandamos un código a tu correo (revisa spam también). Escríbelo abajo.';
+        verificationStatus.textContent = 'Te enviamos un código de verificación (revisa spam también):';
         codeEntryRow.style.display = 'block';
+        requestCodeBtn.style.display = 'inline-block';
       } else {
         verificationStatus.textContent = `⚠️ ${data.error || 'No se pudo mandar el código.'}`;
       }
     } catch (err) {
       verificationStatus.textContent = '⚠️ Error de conexión: ' + err.message;
-    } finally {
-      requestCodeBtn.disabled = false;
-      requestCodeBtn.textContent = '📧 Mandarme un código de verificación';
     }
+  }
+
+  // Muestra el cuadro de verificación y manda el código automáticamente.
+  function promptVerification(message) {
+    const email = getUserEmail();
+    if (!email) {
+      showError('Escribe un correo válido arriba primero.');
+      return;
+    }
+    verificationBox.style.display = 'block';
+    codeEntryRow.style.display = 'none';
+    requestCodeBtn.style.display = 'none';
+    verificationBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    sendVerificationCode(email);
+  }
+
+  // El botón queda como "Reenviar código", por si el primero no llega.
+  requestCodeBtn.textContent = '🔄 Reenviar código';
+  requestCodeBtn.style.display = 'none';
+  requestCodeBtn.addEventListener('click', async () => {
+    const email = getUserEmail();
+    if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
+
+    requestCodeBtn.disabled = true;
+    requestCodeBtn.textContent = 'Reenviando...';
+    await sendVerificationCode(email);
+    requestCodeBtn.disabled = false;
+    requestCodeBtn.textContent = '🔄 Reenviar código';
   });
 
   confirmCodeBtn.addEventListener('click', async () => {
