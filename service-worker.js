@@ -44,13 +44,23 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(data.title || 'Trackear Vuelos', options));
 });
 
-// Al tocar la notificación, abre (o enfoca) el buscador.
+// Al tocar la notificación, abre el link correspondiente. Si es un link
+// de reserva externo (Aviasales), lo abre directo — si es de nuestra
+// propia app, primero intenta enfocar una pestaña ya abierta.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/index.html';
+  const isExternalLink = /^https?:\/\//.test(targetUrl) && !targetUrl.includes(self.location.hostname);
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    (async () => {
+      if (isExternalLink) {
+        // Un link externo (ej. reservar en Aviasales) siempre se abre
+        // directo, sin importar si la app ya está abierta en otra pestaña.
+        if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+        return;
+      }
+      const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of clientList) {
         if (client.url.includes('index.html') && 'focus' in client) {
           return client.focus();
@@ -59,6 +69,6 @@ self.addEventListener('notificationclick', (event) => {
       if (self.clients.openWindow) {
         return self.clients.openWindow(targetUrl);
       }
-    })
+    })()
   );
 });
