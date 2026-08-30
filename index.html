@@ -429,7 +429,7 @@
   <div id="qr-modal-overlay">
     <div id="qr-modal-card">
       <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" id="qr-modal-img">
-      <p>📱 Escanea con la cámara de tu celular</p>
+      <p><strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio, y guarda tus rutas para empezar a recibir alertas.</p>
       <button type="button" class="calendar-btn" id="qr-modal-close">Cerrar</button>
     </div>
   </div>
@@ -497,6 +497,11 @@
     <input type="email" id="user-email" placeholder="tu@correo.com">
   </div>
 
+  <button type="button" class="calendar-btn" id="enable-push-btn">
+    🔔 Activar notificaciones push
+  </button>
+  <div class="calendar-status" id="push-status"></div>
+
   <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#2481cc); color:#fff; font-weight:700;">
     📌 Darle seguimiento al precio de este vuelo
   </button>
@@ -525,6 +530,14 @@
       splash.classList.add('fade-out');
       setTimeout(() => splash.remove(), 500);
     }, 5000);
+
+    // Registramos el Service Worker (necesario para poder recibir
+    // notificaciones push reales, incluso con la app cerrada).
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch((err) => {
+        console.error('No se pudo registrar el Service Worker:', err);
+      });
+    }
   });
 
   // El QR pequeño de la esquina es solo una insignia — al tocarlo, se
@@ -551,6 +564,18 @@
   // Link de afiliado a EKTA (seguro de viaje) — comisión del 25%, la más
   // alta de todo lo que tenemos. Se ofrece como complemento opcional.
   const EKTA_INSURANCE_LINK = "https://ektatraveling.tpk.lu/IjpTBuOL";
+
+  // Llave pública VAPID (no es secreta — identifica a nuestro servidor
+  // ante el navegador para las notificaciones push). La privada vive
+  // solo en el Worker.
+  const VAPID_PUBLIC_KEY = "BMAyKv0opzePpAxUxSf9ggWA0APlsSQxIoPvyPWqEPFLj1sn_4VXN_VF-P-yXHdHAm7OP4S9dt9utch94fPlvk4";
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  }
 
   // NOTA: quitamos el link directo a la aerolínea (sin comisión) y el
   // bloque de "abrir varias reservas a la vez" — sin al menos 2 opciones
@@ -940,6 +965,64 @@
     } finally {
       searchFlightBtn.disabled = false;
       searchFlightBtn.textContent = '📌 Darle seguimiento al precio de este vuelo';
+    }
+  });
+
+  // --- Activar notificaciones push reales ---
+  const enablePushBtn = document.getElementById('enable-push-btn');
+  const pushStatus = document.getElementById('push-status');
+
+  enablePushBtn.addEventListener('click', async () => {
+    clearError();
+    const email = getUserEmail();
+    if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
+    const sessionToken = getValidSessionToken();
+    if (!sessionToken) { promptVerification('Verifica tu correo antes de activar las notificaciones push.'); return; }
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      pushStatus.textContent = '⚠️ Tu navegador no soporta notificaciones push.';
+      return;
+    }
+
+    enablePushBtn.disabled = true;
+    enablePushBtn.textContent = 'Activando...';
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        pushStatus.textContent = '⚠️ No diste permiso de notificaciones. Actívalo desde la configuración del navegador si cambias de opinión.';
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+      }
+
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=save_push_subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, session_token: sessionToken, subscription: subscription.toJSON() }),
+      });
+      const data = await resp.json();
+
+      if (!data.success && data.needs_verification) {
+        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.');
+      } else if (!data.success) {
+        pushStatus.textContent = `⚠️ ${data.error || 'No se pudo activar.'}`;
+      } else if (data.test_sent) {
+        pushStatus.textContent = '✅ Notificaciones push activadas. Te mandamos una de prueba.';
+      } else {
+        pushStatus.textContent = `⚠️ Se guardó, pero la prueba falló: ${data.test_error || ''}`;
+      }
+    } catch (err) {
+      pushStatus.textContent = '⚠️ Error activando notificaciones: ' + err.message;
+    } finally {
+      enablePushBtn.disabled = false;
+      enablePushBtn.textContent = '🔔 Activar notificaciones push';
     }
   });
 
