@@ -1662,21 +1662,25 @@
         const exactReturn = fixedDate;
         try {
           const exact = await fetchExactPrice(origin, destination, exactDepart, exactReturn, passengers);
-          if (exact.success) {
-            const approxNote = exact.date_precision === 'month'
-              ? '<div class="calendar-status">📅 Precio aproximado (no hay calendario completo para esta ruta, pero sí este dato).</div>'
-              : '';
+          if (exact.success && (exact.offer_direct || exact.offer_with_stops)) {
             const link = buildAffiliateLink(origin, destination, exactDepart, exactReturn, passengers);
             const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ¿Vuelo retrasado/cancelado? Reclama aquí</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 (o también aquí)</a>` : '';
+
+            function renderRow(offer, label) {
+              if (!offer) return `<div class="calendar-status">Sin vuelos ${label.toLowerCase()} disponibles.</div>`;
+              return `
+                <div class="price-row cheapest">
+                  <div class="price-row-header">
+                    <span>✈️ ${label} — ${offer.airline}</span>
+                    <span class="price-tag">$${offer.price.toFixed(0)}</span>
+                  </div>
+                </div>`;
+            }
+
             box.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
-              <div class="price-row cheapest">
-                <div class="price-row-header">
-                  <span>✈️ ${exact.airline}</span>
-                  <span class="price-tag">$${exact.price.toFixed(0)}</span>
-                </div>
-              </div>
-              ${approxNote}
+              ${renderRow(exact.offer_direct, 'Directo')}
+              ${renderRow(exact.offer_with_stops, 'Con escala')}
               ${linkHtml}`;
             return;
           }
@@ -1685,11 +1689,10 @@
         }
         box.innerHTML = `
           <div class="calendar-status">
-            No encontré precios en caché para esta ruta en los meses cercanos.
-            Esto pasa en rutas con poco tráfico — probablemente nadie ha
-            consultado estas fechas todavía. Intenta con otras fechas, o
-            usa "Ver precio para estas fechas exactas" para ir explorando
-            qué hay disponible.
+            No encontramos precios para esta ruta y fechas — ni en la
+            caché del calendario, ni en vivo. Esto pasa en rutas con
+            poco tráfico. Intenta con otras fechas cercanas, o prueba
+            de nuevo en un rato (los precios en vivo cambian seguido).
           </div>`;
         return;
       }
