@@ -434,19 +434,6 @@
     </div>
   </div>
 
-  <div class="field" id="verification-box" style="display:none;">
-    <div class="calendar-status" id="verification-status"></div>
-    <button type="button" class="calendar-btn" id="request-code-btn">
-      📧 Mandarme un código de verificación
-    </button>
-    <div id="code-entry-row" style="display:none; margin-top:8px;">
-      <input type="text" id="verify-code-input" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric">
-      <button type="button" class="calendar-btn" id="confirm-code-btn" style="margin-top:8px;">
-        ✅ Confirmar código
-      </button>
-    </div>
-  </div>
-
   <div class="swap-row">
     <div class="field">
       <label for="origin">Origen</label>
@@ -495,6 +482,19 @@
   <div class="field">
     <label for="user-email">Tu correo (para guardar tus rutas y avisos)</label>
     <input type="email" id="user-email" placeholder="tu@correo.com">
+  </div>
+
+  <div class="field" id="verification-box" style="display:none;">
+    <div class="calendar-status" id="verification-status"></div>
+    <button type="button" class="calendar-btn" id="request-code-btn">
+      📧 Mandarme un código de verificación
+    </button>
+    <div id="code-entry-row" style="display:none; margin-top:8px;">
+      <input type="text" id="verify-code-input" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric">
+      <button type="button" class="calendar-btn" id="confirm-code-btn" style="margin-top:8px;">
+        ✅ Confirmar código
+      </button>
+    </div>
   </div>
 
   <button type="button" class="calendar-btn" id="enable-push-btn" style="display:none;">
@@ -547,9 +547,28 @@
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true; // Safari/iOS
     if (isStandalone) {
-      document.getElementById('enable-push-btn').style.display = 'block';
+      const btn = document.getElementById('enable-push-btn');
+      btn.style.display = 'block';
+
+      // Si este dispositivo ya tiene una suscripción activa (de una
+      // visita anterior), lo mostramos de inmediato como "activado" —
+      // no hace falta pedir permiso de nuevo ni tocar nada.
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.ready
+          .then((registration) => registration.pushManager.getSubscription())
+          .then((existingSub) => {
+            if (existingSub) markPushAsActivated();
+          })
+          .catch(() => {});
+      }
     }
   });
+
+  function markPushAsActivated() {
+    const btn = document.getElementById('enable-push-btn');
+    btn.textContent = '✅ Notificaciones activadas';
+    btn.disabled = true;
+  }
 
   // El QR pequeño de la esquina es solo una insignia — al tocarlo, se
   // abre agrandado en un modal para que sí se pueda escanear de verdad.
@@ -997,6 +1016,7 @@
 
     enablePushBtn.disabled = true;
     enablePushBtn.textContent = 'Activando...';
+    let activated = false;
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
@@ -1026,14 +1046,22 @@
         pushStatus.textContent = `⚠️ ${data.error || 'No se pudo activar.'}`;
       } else if (data.test_sent) {
         pushStatus.textContent = '✅ Notificaciones push activadas. Te mandamos una de prueba.';
+        activated = true;
       } else {
+        // Se guardó la suscripción aunque la prueba haya fallado — igual
+        // cuenta como "activado", ya no hace falta volver a tocar el botón.
         pushStatus.textContent = `⚠️ Se guardó, pero la prueba falló: ${data.test_error || ''}`;
+        activated = true;
       }
     } catch (err) {
       pushStatus.textContent = '⚠️ Error activando notificaciones: ' + err.message;
     } finally {
-      enablePushBtn.disabled = false;
-      enablePushBtn.textContent = '🔔 Activar notificaciones push';
+      if (activated) {
+        markPushAsActivated();
+      } else {
+        enablePushBtn.disabled = false;
+        enablePushBtn.textContent = '🔔 Activar notificaciones push';
+      }
     }
   });
 
