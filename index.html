@@ -1284,7 +1284,7 @@
       </div>`;
   }
 
-  async function saveTrackedRoute(payload, preferredAirline, statusBox) {
+  async function saveTrackedRoute(payload, preferredAirline, statusBox, btn) {
     statusBox.innerHTML = '<div class="calendar-status">Guardando...</div>';
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=track`, {
@@ -1295,6 +1295,7 @@
       const data = await resp.json();
       if (!data.success) {
         statusBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'No se pudo guardar la ruta.'}</div>`;
+        if (btn) { btn.disabled = false; btn.textContent = '📌 Seguir este vuelo'; }
         return;
       }
 
@@ -1318,8 +1319,10 @@
         <div class="price-calendar-title">✅ Ruta guardada (ID ${data.route_id}): ${payload.origin} → ${payload.destination}</div>
         ${offerHtml}
         ${notifHtml}`;
+      if (btn) { btn.textContent = '✅ Siguiendo'; } // se queda deshabilitado, no re-habilitamos
     } catch (err) {
       statusBox.innerHTML = `<div class="calendar-status">⚠️ Error de conexión: ${err.message}</div>`;
+      if (btn) { btn.disabled = false; btn.textContent = '📌 Seguir este vuelo'; }
     }
   }
 
@@ -1361,7 +1364,7 @@
           btn.disabled = true;
           btn.textContent = 'Guardando...';
           const statusBox = document.getElementById('track-save-status');
-          saveTrackedRoute(payload, btn.dataset.airline, statusBox);
+          saveTrackedRoute(payload, btn.dataset.airline, statusBox, btn);
         });
       });
     } catch (err) {
