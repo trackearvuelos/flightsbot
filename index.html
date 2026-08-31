@@ -74,6 +74,7 @@
     align-items: center;
     gap: 9px;
     margin-bottom: 18px;
+    margin-right: 76px; /* deja espacio para el QR fijo de la esquina */
   }
   .brand-mark {
     width: 28px;
@@ -90,6 +91,18 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--brand-blue);
+    flex: 1;
+  }
+  #lang-switch-btn {
+    background: var(--field-bg);
+    border: 1px solid var(--dash);
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-blue);
+    cursor: pointer;
+    flex-shrink: 0;
   }
   .field {
     margin-bottom: 16px;
@@ -423,26 +436,27 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M2 20 L21 4 L15 21 L11 14 L2 20Z" fill="#ffffff"/></svg>
     </div>
     <div class="brand-name">TRACKEAR VUELOS</div>
+    <button type="button" id="lang-switch-btn" title="Switch language">🌐 EN</button>
   </div>
 
-  <h1>Tu próximo viaje,<br><em>al mejor precio.</em></h1>
-  <p class="subtitle">Guarda la ruta, nosotros la vigilamos, tú solo empacas cuando avisemos.</p>
+  <h1 data-i18n-html="h1"></h1>
+  <p class="subtitle" data-i18n="subtitle"></p>
 
   <div class="top-services-row">
     <a href="https://ektatraveling.tpk.lu/IjpTBuOL" target="_blank" rel="noopener" class="top-service-card">
-      🛡️<br>Seguros
+      🛡️<br><span data-i18n="svc_insurance"></span>
     </a>
     <a href="https://airhelp.tpk.lu/RgybwSak" target="_blank" rel="noopener" class="top-service-card">
-      🧳<br>¿Se retrasó tu vuelo? Te ayudamos
+      🧳<br><span data-i18n="svc_delay"></span>
     </a>
     <a href="https://tiqets.tpk.lu/To1czhFY" target="_blank" rel="noopener" class="top-service-card">
-      🎟️<br>Entradas
+      🎟️<br><span data-i18n="svc_tickets"></span>
     </a>
     <a href="https://getrentacar.tpk.lu/gAjVHyvJ" target="_blank" rel="noopener" class="top-service-card">
-      🚗<br>Autos
+      🚗<br><span data-i18n="svc_cars"></span>
     </a>
     <a href="https://kkday.tpk.lu/X7dTEzSr" target="_blank" rel="noopener" class="top-service-card">
-      🏨<br>Estadías
+      🏨<br><span data-i18n="svc_stays"></span>
     </a>
   </div>
 
@@ -450,107 +464,271 @@
     <div class="qr-card">
       <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos">
     </div>
-    <div class="qr-badge-label">Clickea el app</div>
+    <div class="qr-badge-label" data-i18n="qr_click"></div>
   </div>
 
   <div id="qr-modal-overlay">
     <div id="qr-modal-card">
       <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" id="qr-modal-img">
-      <p><strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio el app, y guarda tus rutas para empezar a recibir alertas.</p>
-      <button type="button" class="calendar-btn" id="qr-modal-close">Cerrar</button>
+      <p data-i18n-html="qr_modal_text"></p>
+      <button type="button" class="calendar-btn" id="qr-modal-close" data-i18n="close"></button>
     </div>
   </div>
 
   <div class="swap-row">
     <div class="field">
-      <label for="origin">Origen</label>
-      <input type="text" id="origin" placeholder="Ej: San Juan" autocomplete="off">
+      <label for="origin" data-i18n="origin_label"></label>
+      <input type="text" id="origin" data-i18n-ph="origin_ph" autocomplete="off">
       <div class="suggestions" id="origin-suggestions"></div>
     </div>
     <button type="button" class="swap-btn" id="swap-btn" title="Intercambiar">⇄</button>
     <div class="field">
-      <label for="destination">Destino</label>
-      <input type="text" id="destination" placeholder="Ej: Madrid" autocomplete="off">
+      <label for="destination" data-i18n="destination_label"></label>
+      <input type="text" id="destination" data-i18n-ph="destination_ph" autocomplete="off">
       <div class="suggestions" id="destination-suggestions"></div>
     </div>
   </div>
 
   <div class="row2">
     <div class="field">
-      <label for="depart-date" id="depart-date-label">Fecha de ida</label>
+      <label for="depart-date" id="depart-date-label" data-i18n="depart_date_label"></label>
       <input type="date" id="depart-date">
     </div>
     <div class="field">
-      <label for="return-date" id="return-date-label">Fecha de vuelta</label>
+      <label for="return-date" id="return-date-label" data-i18n="return_date_label"></label>
       <input type="date" id="return-date">
     </div>
   </div>
 
   <div class="checkbox-row">
     <input type="checkbox" id="one-way">
-    <label for="one-way">Solo ida (sin vuelta)</label>
+    <label for="one-way" data-i18n="one_way"></label>
   </div>
 
   <div class="field">
-    <label for="passengers">Pasajeros</label>
+    <label for="passengers" data-i18n="passengers_label"></label>
     <input type="number" id="passengers" value="1" min="1" max="9" step="1">
   </div>
 
   <div class="field">
-    <label for="max-price">Avisarme si baja de (opcional, USD)</label>
-    <input type="number" id="max-price" placeholder="Ej: 450" min="0" step="1">
+    <label for="max-price" data-i18n="max_price_label"></label>
+    <input type="number" id="max-price" data-i18n-ph="max_price_ph" min="0" step="1">
   </div>
 
   <div class="field">
-    <label for="user-email">Tu correo (para guardar tus rutas y avisos)</label>
+    <label for="user-email" data-i18n="email_label"></label>
     <input type="email" id="user-email" placeholder="tu@correo.com">
-    <div style="font-size:11px; color:var(--tg-theme-hint-color, #666666); margin-top:4px;">
-      Al continuar, aceptas nuestros <a href="terminos.html" target="_blank" style="color:var(--tg-theme-link-color, #1D4ED8);">Términos y condiciones</a>.
+    <div style="font-size:11px; color:var(--tg-theme-hint-color, #666666); margin-top:4px;" data-i18n-html="terms_note">
     </div>
   </div>
 
   <div class="field" id="verification-box" style="display:none;">
     <div class="calendar-status" id="verification-status"></div>
-    <button type="button" class="calendar-btn" id="request-code-btn">
-      📧 Mandarme un código de verificación
+    <button type="button" class="calendar-btn" id="request-code-btn" data-i18n="resend_code">
     </button>
     <div id="code-entry-row" style="display:none; margin-top:8px;">
-      <input type="text" id="verify-code-input" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric">
-      <button type="button" class="calendar-btn" id="confirm-code-btn" style="margin-top:8px;">
-        ✅ Confirmar código
+      <input type="text" id="verify-code-input" data-i18n-ph="code_ph" maxlength="6" inputmode="numeric">
+      <button type="button" class="calendar-btn" id="confirm-code-btn" style="margin-top:8px;" data-i18n="confirm_code">
       </button>
     </div>
   </div>
 
-  <button type="button" class="calendar-btn" id="enable-push-btn" style="display:none;">
-    🔔 Activar notificaciones push
+  <button type="button" class="calendar-btn" id="enable-push-btn" style="display:none;" data-i18n="enable_push">
   </button>
   <div class="calendar-status" id="push-status"></div>
 
-  <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#1D4ED8); color:#fff; font-weight:700; border-color:transparent;">
-    🔍 Buscar el vuelo más barato
+  <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#1D4ED8); color:#fff; font-weight:700; border-color:transparent;" data-i18n="search_btn">
   </button>
   <div class="price-calendar" id="track-result-box"></div>
 
-  <button type="button" class="calendar-btn" id="my-routes-btn">
-    📋 Ver mis rutas guardadas
+  <button type="button" class="calendar-btn" id="my-routes-btn" data-i18n="my_routes_btn">
   </button>
   <div class="price-calendar" id="my-routes-box"></div>
 
   <div class="error" id="error-msg"></div>
 
   <div style="text-align:center; margin-top:30px; padding-top:16px; border-top:1px solid var(--tg-theme-hint-color, #eeeeee); font-size:12px;">
-    <a href="acerca.html" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;">Acerca de nosotros</a>
+    <a href="acerca.html" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;" data-i18n="footer_about"></a>
     ·
-    <a href="terminos.html" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;">Términos y condiciones</a>
+    <a href="terminos.html" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;" data-i18n="footer_terms"></a>
     ·
-    <a href="mailto:trackearvuelos@gmail.com" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;">Contacto</a>
+    <a href="mailto:trackearvuelos@gmail.com" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;" data-i18n="footer_contact"></a>
   </div>
 
 <script>
   const tg = window.Telegram.WebApp;
   tg.ready();
   tg.expand();
+
+  // ============================================================
+  // Sistema de traducción (español/inglés). El idioma se guarda en
+  // localStorage para recordarlo entre visitas, y se manda al Worker
+  // en las peticiones que lo necesitan (para que los correos/push
+  // automáticos también respeten el idioma).
+  // ============================================================
+  const TRANSLATIONS = {
+    es: {
+      h1: 'Tu próximo viaje,<br><em>al mejor precio.</em>',
+      subtitle: 'Guarda la ruta, nosotros la vigilamos, tú solo empacas cuando avisemos.',
+      svc_insurance: 'Seguros',
+      svc_delay: '¿Se retrasó tu vuelo? Te ayudamos',
+      svc_tickets: 'Entradas',
+      svc_cars: 'Autos',
+      svc_stays: 'Estadías',
+      qr_click: 'Clickea el app',
+      qr_modal_text: '<strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio el app, y guarda tus rutas para empezar a recibir alertas.',
+      close: 'Cerrar',
+      origin_label: 'Origen',
+      origin_ph: 'Ej: San Juan',
+      destination_label: 'Destino',
+      destination_ph: 'Ej: Madrid',
+      depart_date_label: 'Fecha de ida',
+      return_date_label: 'Fecha de vuelta',
+      one_way: 'Solo ida (sin vuelta)',
+      passengers_label: 'Pasajeros',
+      max_price_label: 'Avisarme si baja de (opcional, USD)',
+      max_price_ph: 'Ej: 450',
+      email_label: 'Tu correo (para guardar tus rutas y avisos)',
+      terms_note: 'Al continuar, aceptas nuestros <a href="terminos.html" target="_blank" style="color:var(--tg-theme-link-color, #1D4ED8);">Términos y condiciones</a>.',
+      resend_code: '📧 Mandarme un código de verificación',
+      code_ph: 'Código de 6 dígitos',
+      confirm_code: '✅ Confirmar código',
+      enable_push: '🔔 Activar notificaciones push',
+      search_btn: '🔍 Buscar el vuelo más barato',
+      my_routes_btn: '📋 Ver mis rutas guardadas',
+      footer_about: 'Acerca de nosotros',
+      footer_terms: 'Términos y condiciones',
+      footer_contact: 'Contacto',
+      push_activated: '✅ Notificaciones activadas',
+      err_email: 'Escribe un correo válido arriba primero.',
+      err_origin_dest: 'Elige origen y destino antes de buscar.',
+      err_same: 'El origen y el destino no pueden ser iguales.',
+      err_depart_date: 'Elige una fecha de ida.',
+      err_return_date: 'Elige una fecha de vuelta, o marca "Solo ida".',
+      err_origin_valid: 'Elige un origen válido de la lista de sugerencias.',
+      err_destination_valid: 'Elige un destino válido de la lista de sugerencias.',
+      err_return_before: 'La fecha de vuelta no puede ser antes que la de ida.',
+      err_passengers_range: 'El número de pasajeros debe estar entre 1 y 9.',
+      searching: 'Buscando...',
+      saving: 'Guardando...',
+      following: '✅ Siguiendo',
+      follow_this: '📌 Seguir este vuelo',
+      book_this: 'Reservar (buscar {airline} ahí) →',
+      choose_which: 'Elige cuál(es) seguir — {n} aerolínea(s) encontrada(s):',
+      live_data_note: '💡 Estos precios vienen de nuestra fuente de datos en vivo — al reservar, confirma que la aerolínea y el precio coincidan en la página final antes de pagar.',
+      consulting_airlines: 'Consultando todas las aerolíneas disponibles...',
+      route_saved_title: '✅ Ruta guardada (ID {id}): {origin} → {destination}',
+      total_label: 'Total',
+      per_person: 'por persona',
+      no_live_price: 'Guardada. No encontramos precio en vivo ahora mismo, lo seguiremos intentando.',
+      notif_sent: '📨 Confirmación enviada por correo.',
+      notif_error: '⚠️ No se pudo mandar la notificación: {err}',
+    },
+    en: {
+      h1: 'Your next trip,<br><em>at the best price.</em>',
+      subtitle: "Save the route, we'll watch it, you just pack when we let you know.",
+      svc_insurance: 'Insurance',
+      svc_delay: 'Flight delayed? We can help',
+      svc_tickets: 'Tickets',
+      svc_cars: 'Car rentals',
+      svc_stays: 'Stays',
+      qr_click: 'Tap for the app',
+      qr_modal_text: '<strong>📱 Take Trackear Vuelos with you</strong><br>Scan, add it to your home screen, and save your routes to start getting alerts.',
+      close: 'Close',
+      origin_label: 'From',
+      origin_ph: 'E.g.: San Juan',
+      destination_label: 'To',
+      destination_ph: 'E.g.: Madrid',
+      depart_date_label: 'Departure date',
+      return_date_label: 'Return date',
+      one_way: 'One-way (no return)',
+      passengers_label: 'Passengers',
+      max_price_label: 'Alert me if it drops below (optional, USD)',
+      max_price_ph: 'E.g.: 450',
+      email_label: 'Your email (to save your routes and alerts)',
+      terms_note: 'By continuing, you accept our <a href="terminos.html" target="_blank" style="color:var(--tg-theme-link-color, #1D4ED8);">Terms and Conditions</a>.',
+      resend_code: '📧 Send me a verification code',
+      code_ph: '6-digit code',
+      confirm_code: '✅ Confirm code',
+      enable_push: '🔔 Enable push notifications',
+      search_btn: '🔍 Find the cheapest flight',
+      my_routes_btn: '📋 View my saved routes',
+      footer_about: 'About us',
+      footer_terms: 'Terms and Conditions',
+      footer_contact: 'Contact',
+      push_activated: '✅ Notifications enabled',
+      err_email: 'Enter a valid email above first.',
+      err_origin_dest: 'Choose an origin and destination before searching.',
+      err_same: "Origin and destination can't be the same.",
+      err_depart_date: 'Choose a departure date.',
+      err_return_date: 'Choose a return date, or check "One-way".',
+      err_origin_valid: 'Choose a valid origin from the suggestions list.',
+      err_destination_valid: 'Choose a valid destination from the suggestions list.',
+      err_return_before: "Return date can't be before the departure date.",
+      err_passengers_range: 'Number of passengers must be between 1 and 9.',
+      searching: 'Searching...',
+      saving: 'Saving...',
+      following: '✅ Following',
+      follow_this: '📌 Follow this flight',
+      book_this: 'Book (search {airline} there) →',
+      choose_which: 'Choose which one(s) to follow — {n} airline(s) found:',
+      live_data_note: "💡 These prices come from our live data source — before you pay, confirm the airline and price match on the final booking page.",
+      consulting_airlines: 'Checking all available airlines...',
+      route_saved_title: '✅ Route saved (ID {id}): {origin} → {destination}',
+      total_label: 'Total',
+      per_person: 'per person',
+      no_live_price: "Saved. We couldn't find a live price right now, we'll keep trying.",
+      notif_sent: '📨 Confirmation sent by email.',
+      notif_error: "⚠️ Couldn't send the notification: {err}",
+    },
+  };
+
+  let currentLang = localStorage.getItem('flightbot_lang') || 'es';
+
+  function t(key, params) {
+    let str = (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) || TRANSLATIONS.es[key] || key;
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        str = str.replace(`{${k}}`, v);
+      }
+    }
+    return str;
+  }
+
+  function applyTranslations() {
+    document.documentElement.lang = currentLang;
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+      el.innerHTML = t(el.dataset.i18nHtml);
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
+      el.placeholder = t(el.dataset.i18nPh);
+    });
+    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+  }
+
+  document.getElementById('lang-switch-btn').addEventListener('click', () => {
+    currentLang = currentLang === 'es' ? 'en' : 'es';
+    localStorage.setItem('flightbot_lang', currentLang);
+    applyTranslations();
+    // Si ya está verificado, avisamos al Worker del cambio para que los
+    // correos/push automáticos futuros también respeten el idioma nuevo.
+    const session = getValidSessionToken ? getValidSessionToken() : null;
+    if (session) {
+      const email = getUserEmail ? getUserEmail() : null;
+      if (email) {
+        fetch(`${CALENDAR_PROXY_URL}?action=set_language`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, session_token: session, language: currentLang }),
+        }).catch(() => {});
+      }
+    }
+  });
+
+  applyTranslations();
 
   window.addEventListener('load', () => {
     // Registramos el Service Worker (necesario para poder recibir
@@ -588,7 +766,7 @@
 
   function markPushAsActivated() {
     const btn = document.getElementById('enable-push-btn');
-    btn.textContent = '✅ Notificaciones activadas';
+    btn.textContent = t('push_activated');
     btn.disabled = true;
   }
 
@@ -889,16 +1067,18 @@
   // en cuanto se necesita verificar (ya no hay que tocar un botón aparte
   // para pedirlo la primera vez).
   async function sendVerificationCode(email) {
-    verificationStatus.textContent = 'Enviando código...';
+    verificationStatus.textContent = currentLang === 'en' ? 'Sending code...' : 'Enviando código...';
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=request_verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, language: currentLang }),
       });
       const data = await resp.json();
       if (data.success) {
-        verificationStatus.textContent = 'Te enviamos un código de verificación (revisa spam también):';
+        verificationStatus.textContent = currentLang === 'en'
+          ? 'We sent you a verification code (check spam too):'
+          : 'Te enviamos un código de verificación (revisa spam también):';
         codeEntryRow.style.display = 'block';
         requestCodeBtn.style.display = 'inline-block';
       } else {
@@ -986,14 +1166,14 @@
     const maxPrice = document.getElementById('max-price').value;
     const passengers = parseInt(document.getElementById('passengers').value, 10) || 1;
 
-    if (!email) { showError('Escribe un correo válido arriba.'); return null; }
-    if (!origin) { showError('Elige un origen válido de la lista de sugerencias.'); return null; }
-    if (!destination) { showError('Elige un destino válido de la lista de sugerencias.'); return null; }
-    if (origin === destination) { showError('El origen y el destino no pueden ser el mismo.'); return null; }
-    if (!departDate) { showError('Elige una fecha de ida.'); return null; }
-    if (!oneWayCheckbox.checked && !returnDate) { showError('Elige una fecha de vuelta, o marca "Solo ida".'); return null; }
-    if (returnDate && returnDate < departDate) { showError('La fecha de vuelta no puede ser antes que la de ida.'); return null; }
-    if (passengers < 1 || passengers > 9) { showError('El número de pasajeros debe estar entre 1 y 9.'); return null; }
+    if (!email) { showError(t('err_email')); return null; }
+    if (!origin) { showError(t('err_origin_valid')); return null; }
+    if (!destination) { showError(t('err_destination_valid')); return null; }
+    if (origin === destination) { showError(t('err_same')); return null; }
+    if (!departDate) { showError(t('err_depart_date')); return null; }
+    if (!oneWayCheckbox.checked && !returnDate) { showError(t('err_return_date')); return null; }
+    if (returnDate && returnDate < departDate) { showError(t('err_return_before')); return null; }
+    if (passengers < 1 || passengers > 9) { showError(t('err_passengers_range')); return null; }
 
     return {
       email,
@@ -1004,6 +1184,7 @@
       max_price: maxPrice ? parseFloat(maxPrice) : null,
       passengers,
       notify_channel: selectedChannel,
+      language: currentLang,
     };
   }
 
@@ -1014,8 +1195,13 @@
   const searchFlightBtn = document.getElementById('search-flight-btn');
   const trackResultBox = document.getElementById('track-result-box');
 
+  function paxLabelClient(n) {
+    if (currentLang === 'en') return n === 1 ? '1 passenger' : `${n} passengers`;
+    return n === 1 ? '1 pasajero' : `${n} pasajeros`;
+  }
+
   function renderOfferPreviewRow(offer, payload) {
-    const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
+    const paxLabel = paxLabelClient(payload.passengers);
     const perPersonNote = payload.passengers > 1 && offer.price_per_person
       ? ` ($${offer.price_per_person.toFixed(0)} c/u)`
       : '';
@@ -1035,14 +1221,14 @@
           <span class="price-tag">$${offer.price.toFixed(0)}${perPersonNote}</span>
         </div>
         <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff; border-color:transparent;">
-          📌 Seguir este vuelo
+          ${t('follow_this')}
         </button>
-        ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Reservar (buscar ${offer.airline} ahí) →</a>` : ''}
+        ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
       </div>`;
   }
 
   async function saveTrackedRoute(payload, preferredAirline, statusBox, btn) {
-    statusBox.innerHTML = '<div class="calendar-status">Guardando...</div>';
+    statusBox.innerHTML = `<div class="calendar-status">${t('saving')}</div>`;
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=track`, {
         method: 'POST',
@@ -1051,35 +1237,35 @@
       });
       const data = await resp.json();
       if (!data.success) {
-        statusBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'No se pudo guardar la ruta.'}</div>`;
-        if (btn) { btn.disabled = false; btn.textContent = '📌 Seguir este vuelo'; }
+        statusBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'Error'}</div>`;
+        if (btn) { btn.disabled = false; btn.textContent = t('follow_this'); }
         return;
       }
 
       const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
-      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">Reservar</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ¿Aseguras tu viaje? Cotiza aquí</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ¿Vuelo retrasado/cancelado? Reclama aquí</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 (o también aquí)</a>` : '';
-      const paxLabel = payload.passengers === 1 ? '1 pasajero' : `${payload.passengers} pasajeros`;
+      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">${t('search_btn').includes('Find') ? 'Book' : 'Reservar'}</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ${currentLang === 'en' ? 'Traveling? Get a quote here' : '¿Aseguras tu viaje? Cotiza aquí'}</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? 'Flight delayed/canceled? Claim here' : '¿Vuelo retrasado/cancelado? Reclama aquí'}</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? '(or here too)' : '(o también aquí)'}</a>` : '';
+      const paxLabel = paxLabelClient(payload.passengers);
       const perPersonNote = data.offer && payload.passengers > 1 && data.offer.price_per_person
-        ? `<div class="calendar-status" style="padding:0;">($${data.offer.price_per_person.toFixed(0)} por persona × ${payload.passengers})</div>`
+        ? `<div class="calendar-status" style="padding:0;">($${data.offer.price_per_person.toFixed(0)} ${t('per_person')} × ${payload.passengers})</div>`
         : '';
       const offerHtml = data.offer
-        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span><span class="price-tag">Total: $${data.offer.price.toFixed(0)}</span></div>${perPersonNote}</div>${linkHtml}`
-        : '<div class="calendar-status">Guardada. No encontramos precio en vivo ahora mismo, lo seguiremos intentando.</div>';
+        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span><span class="price-tag">${t('total_label')}: $${data.offer.price.toFixed(0)}</span></div>${perPersonNote}</div>${linkHtml}`
+        : `<div class="calendar-status">${t('no_live_price')}</div>`;
 
       const notifHtml = data.notification_sent
-        ? `<div class="calendar-status">📨 Confirmación enviada por ${selectedChannel}.</div>`
+        ? `<div class="calendar-status">${t('notif_sent')}</div>`
         : data.notification_error
-        ? `<div class="calendar-status">⚠️ No se pudo mandar la notificación: ${data.notification_error}</div>`
+        ? `<div class="calendar-status">${t('notif_error', { err: data.notification_error })}</div>`
         : '';
 
       statusBox.innerHTML = `
-        <div class="price-calendar-title">✅ Ruta guardada (ID ${data.route_id}): ${payload.origin} → ${payload.destination}</div>
+        <div class="price-calendar-title">${t('route_saved_title', { id: data.route_id, origin: payload.origin, destination: payload.destination })}</div>
         ${offerHtml}
         ${notifHtml}`;
-      if (btn) { btn.textContent = '✅ Siguiendo'; } // se queda deshabilitado, no re-habilitamos
+      if (btn) { btn.textContent = t('following'); } // se queda deshabilitado, no re-habilitamos
     } catch (err) {
-      statusBox.innerHTML = `<div class="calendar-status">⚠️ Error de conexión: ${err.message}</div>`;
-      if (btn) { btn.disabled = false; btn.textContent = '📌 Seguir este vuelo'; }
+      statusBox.innerHTML = `<div class="calendar-status">⚠️ ${err.message}</div>`;
+      if (btn) { btn.disabled = false; btn.textContent = t('follow_this'); }
     }
   }
 
@@ -1088,9 +1274,9 @@
     if (!payload) return;
 
     searchFlightBtn.disabled = true;
-    searchFlightBtn.textContent = 'Buscando...';
+    searchFlightBtn.textContent = t('searching');
     trackResultBox.classList.add('open');
-    trackResultBox.innerHTML = '<div class="calendar-status">Consultando todas las aerolíneas disponibles...</div>';
+    trackResultBox.innerHTML = `<div class="calendar-status">${t('consulting_airlines')}</div>`;
 
     try {
       const params = new URLSearchParams({
@@ -1103,7 +1289,7 @@
       const data = await resp.json();
 
       if (!data.success) {
-        trackResultBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'No se encontraron vuelos.'}</div>`;
+        trackResultBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || (currentLang === 'en' ? 'No flights found.' : 'No se encontraron vuelos.')}</div>`;
         return;
       }
 
@@ -1111,24 +1297,24 @@
       const rowsHtml = offers.map((offer) => renderOfferPreviewRow(offer, payload)).join('');
 
       trackResultBox.innerHTML = `
-        <div class="price-calendar-title">Elige cuál(es) seguir — ${offers.length} aerolínea(s) encontrada(s):</div>
-        <div class="calendar-status" style="padding:0 4px 8px;">💡 Estos precios vienen de nuestra fuente de datos en vivo — al reservar, confirma que la aerolínea y el precio coincidan en la página final antes de pagar.</div>
+        <div class="price-calendar-title">${t('choose_which', { n: offers.length })}</div>
+        <div class="calendar-status" style="padding:0 4px 8px;">${t('live_data_note')}</div>
         ${rowsHtml}
         <div id="track-save-status"></div>`;
 
       trackResultBox.querySelectorAll('.track-this-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           btn.disabled = true;
-          btn.textContent = 'Guardando...';
+          btn.textContent = t('saving');
           const statusBox = document.getElementById('track-save-status');
           saveTrackedRoute(payload, btn.dataset.airline, statusBox, btn);
         });
       });
     } catch (err) {
-      trackResultBox.innerHTML = `<div class="calendar-status">⚠️ Error de conexión: ${err.message}</div>`;
+      trackResultBox.innerHTML = `<div class="calendar-status">⚠️ ${err.message}</div>`;
     } finally {
       searchFlightBtn.disabled = false;
-      searchFlightBtn.textContent = '🔍 Buscar el vuelo más barato';
+      searchFlightBtn.textContent = t('search_btn');
     }
   });
 
