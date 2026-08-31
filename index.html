@@ -3,7 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trackear Vuelos</title>
+<title>Trackear Vuelos: Compara y Vigila Precios de Boletos de Avión</title>
+<meta name="description" content="Busca vuelos baratos y te avisamos automáticamente cuando el precio baja. Compara varias aerolíneas, guarda tus rutas favoritas, y recibe alertas por correo o notificación push. Gratis.">
+<meta name="keywords" content="vuelos baratos, comparador de vuelos, alertas de precio de vuelos, boletos de avión, trackear vuelos, vuelos San Juan, vuelos Puerto Rico">
+<link rel="canonical" href="https://trackearvuelos.com/index.html">
+
+<!-- Open Graph: cómo se ve el link al compartirlo en WhatsApp, Facebook, etc. -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://trackearvuelos.com/index.html">
+<meta property="og:title" content="Trackear Vuelos: Compara y Vigila Precios de Boletos de Avión">
+<meta property="og:description" content="Busca vuelos baratos y te avisamos automáticamente cuando el precio baja. Gratis.">
+<meta property="og:image" content="https://trackearvuelos.com/icons/icon-512.png">
+
+<!-- Twitter/X Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Trackear Vuelos: Compara y Vigila Precios de Boletos de Avión">
+<meta name="twitter:description" content="Busca vuelos baratos y te avisamos automáticamente cuando el precio baja. Gratis.">
+<meta name="twitter:image" content="https://trackearvuelos.com/icons/icon-512.png">
 
 <!-- Configuración de PWA: permite "Agregar a pantalla de inicio" con
      ícono propio, en vez del ícono genérico del navegador. -->
@@ -23,7 +39,7 @@
     --brand-wine: #8C2F39;
     --ink: #16223A;
     --ink-soft: #5B6B85;
-    --ink-faint: #9FB0C8;
+    --ink-faint: #6B7A94;
     --surface: #ffffff;
     --field-bg: #F4F8FF;
     --dash: #D7E2F7;
@@ -399,64 +415,6 @@
     border-color: var(--brand-blue);
     font-weight: 600;
   }
-  #access-gate {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 24px;
-    text-align: center;
-    background: linear-gradient(160deg, #1D4ED8 0%, #16223A 100%);
-  }
-  #access-gate-title {
-    color: #ffffff;
-    font-size: 20px;
-    font-weight: 700;
-  }
-  #access-gate p {
-    color: rgba(255,255,255,0.85);
-    font-size: 13px;
-    max-width: 280px;
-    margin: 0 0 8px 0;
-  }
-  #access-code-input {
-    width: 220px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: none;
-    font-size: 16px;
-    text-align: center;
-  }
-  #access-remember-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 220px;
-    color: rgba(255,255,255,0.85);
-    font-size: 11px;
-    text-align: left;
-    margin: 2px 0;
-  }
-  #access-code-submit {
-    width: 220px;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-    background: #ffffff;
-    color: #8C2F39;
-    font-weight: 700;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  #access-gate-error {
-    color: #ffd7d7;
-    font-size: 13px;
-    min-height: 18px;
-  }
   #splash-screen {
     position: fixed;
     inset: 0;
@@ -539,30 +497,6 @@
 </style>
 </head>
 <body>
-
-  <!-- Puerta de acceso temporal (mientras el sitio está en pruebas
-       cerradas). Fácil de quitar después: borra este bloque completo,
-       el bloque de script chiquito de abajo, y en el Worker la función
-       handleCheckAccessCodeRequest + su línea en el router. -->
-  <div id="access-gate">
-    <img src="icons/icon-512.png" alt="Trackear Vuelos" style="width:72px; height:72px; border-radius:16px;">
-    <div id="access-gate-title">Trackear Vuelos</div>
-    <p>Todavía en pruebas — escribe el código de acceso que te compartieron.</p>
-    <input type="text" id="access-code-input" placeholder="Código de acceso" autocomplete="off">
-    <label id="access-remember-label">
-      <input type="checkbox" id="access-remember-checkbox">
-      Recordar en este dispositivo (no marcar en computadoras públicas)
-    </label>
-    <button type="button" id="access-code-submit">Entrar</button>
-    <div id="access-gate-error"></div>
-  </div>
-  <script>
-    // Si ya entraste antes con el código correcto en este navegador, no
-    // te lo vuelve a pedir.
-    if (localStorage.getItem('flightbot_access_granted') === 'true') {
-      document.getElementById('access-gate').style.display = 'none';
-    }
-  </script>
 
   <div id="splash-screen">
     <div id="splash-icon-wrap">
@@ -663,7 +597,7 @@
   <div class="field">
     <label for="user-email">Tu correo (para guardar tus rutas y avisos)</label>
     <input type="email" id="user-email" placeholder="tu@correo.com">
-    <div style="font-size:11px; color:var(--tg-theme-hint-color, #888888); margin-top:4px;">
+    <div style="font-size:11px; color:var(--tg-theme-hint-color, #666666); margin-top:4px;">
       Al continuar, aceptas nuestros <a href="terminos.html" target="_blank" style="color:var(--tg-theme-link-color, #1D4ED8);">Términos y condiciones</a>.
     </div>
   </div>
@@ -699,11 +633,11 @@
   <div class="error" id="error-msg"></div>
 
   <div style="text-align:center; margin-top:30px; padding-top:16px; border-top:1px solid var(--tg-theme-hint-color, #eeeeee); font-size:12px;">
-    <a href="acerca.html" style="color:var(--tg-theme-hint-color, #888888); text-decoration:none; margin:0 8px;">Acerca de nosotros</a>
+    <a href="acerca.html" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;">Acerca de nosotros</a>
     ·
-    <a href="terminos.html" style="color:var(--tg-theme-hint-color, #888888); text-decoration:none; margin:0 8px;">Términos y condiciones</a>
+    <a href="terminos.html" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;">Términos y condiciones</a>
     ·
-    <a href="mailto:trackearvuelos@gmail.com" style="color:var(--tg-theme-hint-color, #888888); text-decoration:none; margin:0 8px;">Contacto</a>
+    <a href="mailto:trackearvuelos@gmail.com" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;">Contacto</a>
   </div>
 
 <script>
@@ -743,13 +677,7 @@
   }
 
   window.addEventListener('load', () => {
-    // Si ya tenías el acceso guardado de una visita anterior, la puerta
-    // ni siquiera se mostró — el splash puede arrancar de inmediato,
-    // como siempre. Si NO, esperamos a que se desbloquee (ver
-    // trySubmitAccessCode) para arrancarlo ahí en vez de aquí.
-    if (localStorage.getItem('flightbot_access_granted') === 'true') {
-      startSplashSequence();
-    }
+    startSplashSequence();
 
     // Registramos el Service Worker (necesario para poder recibir
     // notificaciones push reales, incluso con la app cerrada).
@@ -825,51 +753,6 @@
   function airlineName(code) {
     return AIRLINE_IATA_NAMES[code] || code || 'Aerolínea';
   }
-
-  // --- Puerta de acceso temporal (mientras el sitio está en pruebas) ---
-  // Fácil de quitar: borra este bloque completo cuando ya no lo necesites.
-  const accessCodeInput = document.getElementById('access-code-input');
-  const accessCodeSubmit = document.getElementById('access-code-submit');
-  const accessGateError = document.getElementById('access-gate-error');
-  const accessRememberCheckbox = document.getElementById('access-remember-checkbox');
-
-  async function trySubmitAccessCode() {
-    const code = accessCodeInput.value.trim();
-    if (!code) { accessGateError.textContent = 'Escribe el código.'; return; }
-
-    accessCodeSubmit.disabled = true;
-    accessCodeSubmit.textContent = 'Verificando...';
-    try {
-      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=check_access_code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      const data = await resp.json();
-      if (data.success) {
-        // Solo lo recordamos si la persona marcó la casilla — así, en
-        // una computadora pública, basta con NO marcarla para que no
-        // quede nada guardado ahí para el siguiente que la use.
-        if (accessRememberCheckbox.checked) {
-          localStorage.setItem('flightbot_access_granted', 'true');
-        }
-        document.getElementById('access-gate').style.display = 'none';
-        startSplashSequence(); // recién ahora, no desde que cargó la página
-      } else {
-        accessGateError.textContent = data.error || 'Código incorrecto.';
-      }
-    } catch (err) {
-      accessGateError.textContent = 'Error de conexión: ' + err.message;
-    } finally {
-      accessCodeSubmit.disabled = false;
-      accessCodeSubmit.textContent = 'Entrar';
-    }
-  }
-
-  accessCodeSubmit.addEventListener('click', trySubmitAccessCode);
-  accessCodeInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') trySubmitAccessCode();
-  });
 
   // Link de afiliado a EKTA (seguro de viaje) — comisión del 25%, la más
   // alta de todo lo que tenemos. Se ofrece como complemento opcional.
