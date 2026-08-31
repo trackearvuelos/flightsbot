@@ -1342,6 +1342,7 @@
 
       trackResultBox.innerHTML = `
         <div class="price-calendar-title">Elige cuál(es) seguir — ${offers.length} aerolínea(s) encontrada(s):</div>
+        <div class="calendar-status" style="padding:0 4px 8px;">💡 Estos precios vienen de nuestra fuente de datos en vivo — al reservar, confirma que la aerolínea y el precio coincidan en la página final antes de pagar.</div>
         ${rowsHtml}
         <div id="track-save-status"></div>`;
 
@@ -1676,6 +1677,7 @@
 
             box.innerHTML = `
               <div class="price-calendar-title">${origin} → ${destination}, ${exactDepart}${exactReturn ? ' → ' + exactReturn : ' (solo ida)'}</div>
+              <div class="calendar-status" style="padding:0 4px 8px;">💡 Estos precios vienen de nuestra fuente de datos en vivo — al reservar, confirma que la aerolínea y el precio coincidan en la página final antes de pagar.</div>
               ${rowsHtml}
               <div id="track-save-status"></div>`;
 
