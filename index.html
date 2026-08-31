@@ -1252,7 +1252,10 @@
     const perPersonNote = payload.passengers > 1 && offer.price_per_person
       ? ` ($${offer.price_per_person.toFixed(0)} c/u)`
       : '';
-    const stopsLabel = offer.is_direct ? 'Directo' : 'Con escala';
+    // Ya no mostramos "Directo"/"Con escala" — no es un dato confiable
+    // (las paradas técnicas a veces se reportan como escala real, según
+    // cada aerolínea). Nos quedamos solo con la aerolínea, que sí es
+    // 100% confiable.
     // Nota honesta: Aviasales no nos deja armar un link que filtre por
     // una aerolínea específica — este "Reservar" te lleva a la búsqueda
     // general de esta ruta/fechas, donde puedes elegir esa aerolínea tú
@@ -1261,23 +1264,23 @@
     return `
       <div class="price-row">
         <div class="price-row-header">
-          <span>✈️ ${offer.airline} — ${stopsLabel} (${paxLabel})</span>
+          <span>✈️ ${offer.airline} (${paxLabel})</span>
           <span class="price-tag">$${offer.price.toFixed(0)}${perPersonNote}</span>
         </div>
-        <button type="button" class="calendar-btn track-this-btn" data-flight-type="${offer.is_direct ? 'direct' : 'with_stops'}" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff;">
+        <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff;">
           📌 Seguir este vuelo
         </button>
         ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Reservar (buscar ${offer.airline} ahí) →</a>` : ''}
       </div>`;
   }
 
-  async function saveTrackedRoute(payload, flightType, preferredAirline, statusBox) {
+  async function saveTrackedRoute(payload, preferredAirline, statusBox) {
     statusBox.innerHTML = '<div class="calendar-status">Guardando...</div>';
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, flight_type: flightType, preferred_airline: preferredAirline }),
+        body: JSON.stringify({ ...payload, preferred_airline: preferredAirline }),
       });
       const data = await resp.json();
       if (!data.success) {
@@ -1347,7 +1350,7 @@
           btn.disabled = true;
           btn.textContent = 'Guardando...';
           const statusBox = document.getElementById('track-save-status');
-          saveTrackedRoute(payload, btn.dataset.flightType, btn.dataset.airline, statusBox);
+          saveTrackedRoute(payload, btn.dataset.airline, statusBox);
         });
       });
     } catch (err) {
@@ -1460,7 +1463,7 @@
       for (const r of routes) {
         const tripLabel = r.return_date ? `${r.depart_date} → ${r.return_date}` : `${r.depart_date} (solo ida)`;
         const paxLabel = r.passengers === 1 ? '1 pasajero' : `${r.passengers} pasajeros`;
-        const flightTypeLabel = r.flight_type === 'direct' ? ' · solo directos' : r.flight_type === 'with_stops' ? ' · con escala' : '';
+        const airlineLabel = r.preferred_airline ? ` · ${r.preferred_airline}` : '';
         let priceLabel = 'Sin precio aún';
         if (r.current_price) {
           const checkedDate = r.last_checked_at ? new Date(r.last_checked_at).toLocaleDateString('es') : '';
@@ -1473,7 +1476,7 @@
         html += `
           <div class="price-row">
             <div class="price-row-header">
-              <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel}${flightTypeLabel})</span>
+              <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel}${airlineLabel})</span>
             </div>
             <div class="calendar-status" style="padding:0;">${priceLabel}</div>
             ${routeLink ? `<a class="book-link" href="${routeLink}" target="_blank" rel="noopener">Reservar →</a>` : ''}
@@ -1684,7 +1687,7 @@
                 btn.textContent = 'Guardando...';
                 const statusBox = document.getElementById('track-save-status');
                 const trackPayload = { ...fallbackPayload, email, max_price: null, notify_channel: selectedChannel };
-                saveTrackedRoute(trackPayload, btn.dataset.flightType, btn.dataset.airline, statusBox);
+                saveTrackedRoute(trackPayload, btn.dataset.airline, statusBox);
               });
             });
             return;
