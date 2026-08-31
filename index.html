@@ -200,7 +200,7 @@
     width: 100%;
     padding: 12px;
     border-radius: 11px;
-    border: none;
+    border: 1px solid var(--dash);
     background: var(--tg-theme-secondary-bg-color, var(--field-bg));
     color: var(--tg-theme-button-color, var(--brand-blue));
     font-size: 14px;
@@ -211,10 +211,6 @@
   .calendar-btn:disabled {
     opacity: 0.5;
     cursor: default;
-  }
-  #calendar-btn {
-    background: var(--brand-wine);
-    color: #FBF3EC;
   }
   .price-calendar {
     display: none;
@@ -623,7 +619,7 @@
   </button>
   <div class="calendar-status" id="push-status"></div>
 
-  <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#1D4ED8); color:#fff; font-weight:700;">
+  <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#1D4ED8); color:#fff; font-weight:700; border-color:transparent;">
     🔍 Buscar el vuelo más barato
   </button>
   <div class="price-calendar" id="track-result-box"></div>
@@ -1163,7 +1159,7 @@
           <span>✈️ ${offer.airline} (${paxLabel})</span>
           <span class="price-tag">$${offer.price.toFixed(0)}${perPersonNote}</span>
         </div>
-        <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff;">
+        <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff; border-color:transparent;">
           📌 Seguir este vuelo
         </button>
         ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Reservar (buscar ${offer.airline} ahí) →</a>` : ''}
