@@ -568,7 +568,10 @@
       <input type="checkbox" id="channel-email" checked>
       <label for="channel-email" data-i18n="channel_email"></label>
     </div>
-    <div class="checkbox-row">
+    <!-- Push: por seguridad/privacidad (computadoras públicas), solo se
+         muestra cuando la app está instalada (modo standalone) — se
+         revela vía JS más abajo si aplica. -->
+    <div class="checkbox-row" id="channel-push-row" style="display:none;">
       <input type="checkbox" id="channel-push">
       <label for="channel-push" data-i18n="channel_push"></label>
     </div>
@@ -838,6 +841,7 @@
     if (isStandalone) {
       const btn = document.getElementById('enable-push-btn');
       btn.style.display = 'block';
+      document.getElementById('channel-push-row').style.display = 'flex';
 
       // Si este dispositivo ya tiene una suscripción activa (de una
       // visita anterior), lo mostramos de inmediato como "activado" —
