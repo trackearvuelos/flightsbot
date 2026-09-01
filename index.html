@@ -562,6 +562,32 @@
   </button>
   <div class="calendar-status" id="push-status"></div>
 
+  <div class="field" id="channels-box" style="display:none;">
+    <label data-i18n="channels_label"></label>
+    <div class="checkbox-row">
+      <input type="checkbox" id="channel-email" checked>
+      <label for="channel-email" data-i18n="channel_email"></label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="channel-push">
+      <label for="channel-push" data-i18n="channel_push"></label>
+    </div>
+    <!-- WhatsApp: oculto hasta tener las credenciales de Meta (ver
+         WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID en el Worker).
+         Para reactivarlo, solo quita el "style=display:none" de este
+         div y del de abajo. -->
+    <div class="checkbox-row" style="display:none;">
+      <input type="checkbox" id="channel-whatsapp">
+      <label for="channel-whatsapp" data-i18n="channel_whatsapp"></label>
+    </div>
+    <div id="whatsapp-number-row" style="display:none; margin:6px 0;">
+      <input type="text" id="whatsapp-number-input" data-i18n-ph="whatsapp_number_ph">
+    </div>
+    <button type="button" class="calendar-btn" id="save-channels-btn" style="margin-top:8px;" data-i18n="save_channels">
+    </button>
+    <div class="calendar-status" id="channels-status"></div>
+  </div>
+
   <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#1D4ED8); color:#fff; font-weight:700; border-color:transparent;" data-i18n="search_btn">
   </button>
   <div class="price-calendar" id="track-result-box"></div>
@@ -653,6 +679,17 @@
       hotel_note_link: '🏨 ¿Necesitas hospedaje? Cotiza aquí →',
       share_whatsapp: '📤 Compartir por WhatsApp',
       share_message: '✈️ ¡Mira este vuelo! {origin} → {destination} con {airline} por ${price}. {link}',
+      channels_label: 'Canales de notificación (marca los que quieras)',
+      channel_email: '📧 Correo',
+      channel_push: '🔔 Notificaciones push',
+      channel_whatsapp: '💬 WhatsApp (muy pronto)',
+      whatsapp_number_ph: 'Tu número con código de país, ej: +17871234567',
+      save_channels: 'Guardar canales',
+      saving_channels: 'Guardando...',
+      channels_saved: '✅ Canales guardados. Te mandamos una prueba por cada uno.',
+      err_pick_channel: 'Marca al menos un canal.',
+      err_push_first: 'Primero activa el permiso de push en este dispositivo (botón de arriba).',
+      err_whatsapp_number: 'Escribe tu número de WhatsApp primero.',
     },
     en: {
       h1: 'Your next trip,<br><em>at the best price.</em>',
@@ -715,6 +752,17 @@
       hotel_note_link: '🏨 Need a place to stay? Get a quote →',
       share_whatsapp: '📤 Share on WhatsApp',
       share_message: '✈️ Check out this flight! {origin} → {destination} with {airline} for ${price}. {link}',
+      channels_label: 'Notification channels (check any you want)',
+      channel_email: '📧 Email',
+      channel_push: '🔔 Push notifications',
+      channel_whatsapp: '💬 WhatsApp (coming soon)',
+      whatsapp_number_ph: 'Your number with country code, e.g.: +17871234567',
+      save_channels: 'Save channels',
+      saving_channels: 'Saving...',
+      channels_saved: '✅ Channels saved. We sent a test through each one.',
+      err_pick_channel: 'Check at least one channel.',
+      err_push_first: 'First enable push permission on this device (button above).',
+      err_whatsapp_number: 'Enter your WhatsApp number first.',
     },
   };
 
@@ -766,6 +814,12 @@
   applyTranslations();
 
   window.addEventListener('load', () => {
+    // Si ya había una sesión verificada de una visita anterior, mostramos
+    // directo la sección de canales sin tener que verificar de nuevo.
+    if (getValidSessionToken()) {
+      document.getElementById('channels-box').style.display = 'block';
+    }
+
     // Registramos el Service Worker (necesario para poder recibir
     // notificaciones push reales, incluso con la app cerrada).
     if ('serviceWorker' in navigator) {
@@ -1175,6 +1229,7 @@
         localStorage.setItem('flightbot_session', JSON.stringify({ email, session_token: data.session_token }));
         verificationStatus.textContent = '✅ Correo verificado. Ya puedes ver/borrar tus rutas.';
         codeEntryRow.style.display = 'none';
+        document.getElementById('channels-box').style.display = 'block';
         if (pendingRetryFn) {
           const retry = pendingRetryFn;
           pendingRetryFn = null;
@@ -1441,6 +1496,61 @@
         enablePushBtn.disabled = false;
         enablePushBtn.textContent = '🔔 Activar notificaciones push';
       }
+    }
+  });
+
+  // --- Canales de notificación (varios a la vez) ---
+  const channelWhatsappCheckbox = document.getElementById('channel-whatsapp');
+  const whatsappNumberRow = document.getElementById('whatsapp-number-row');
+  channelWhatsappCheckbox.addEventListener('change', () => {
+    whatsappNumberRow.style.display = channelWhatsappCheckbox.checked ? 'block' : 'none';
+  });
+
+  const saveChannelsBtn = document.getElementById('save-channels-btn');
+  const channelsStatus = document.getElementById('channels-status');
+  saveChannelsBtn.addEventListener('click', async () => {
+    const email = getUserEmail();
+    if (!email) { showError(t('err_email')); return; }
+    const sessionToken = getValidSessionToken();
+    if (!sessionToken) { promptVerification(t('err_email'), () => saveChannelsBtn.click()); return; }
+
+    const channels = [];
+    if (document.getElementById('channel-email').checked) channels.push('email');
+    if (document.getElementById('channel-push').checked) channels.push('push');
+    if (channelWhatsappCheckbox.checked) channels.push('whatsapp');
+
+    if (channels.length === 0) { channelsStatus.textContent = `⚠️ ${t('err_pick_channel')}`; return; }
+
+    const whatsappNumber = document.getElementById('whatsapp-number-input').value.trim();
+    if (channelWhatsappCheckbox.checked && !whatsappNumber) {
+      channelsStatus.textContent = `⚠️ ${t('err_whatsapp_number')}`;
+      return;
+    }
+
+    saveChannelsBtn.disabled = true;
+    saveChannelsBtn.textContent = t('saving_channels');
+    channelsStatus.textContent = '';
+    try {
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=set_channels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, session_token: sessionToken, channels, whatsapp_number: whatsappNumber || null }),
+      });
+      const data = await resp.json();
+      if (!data.success && data.needs_verification) {
+        promptVerification(t('err_email'), () => saveChannelsBtn.click());
+      } else if (!data.success && data.needs_push_subscription) {
+        channelsStatus.textContent = `⚠️ ${t('err_push_first')}`;
+      } else if (!data.success) {
+        channelsStatus.textContent = `⚠️ ${data.error || 'Error'}`;
+      } else {
+        channelsStatus.textContent = t('channels_saved');
+      }
+    } catch (err) {
+      channelsStatus.textContent = `⚠️ ${err.message}`;
+    } finally {
+      saveChannelsBtn.disabled = false;
+      saveChannelsBtn.textContent = t('save_channels');
     }
   });
 
