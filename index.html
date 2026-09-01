@@ -651,6 +651,8 @@
       insurance_estimate: '🛡️ Seguro de viaje estimado: ${low}-${high}',
       insurance_quote_link: 'Cotiza el real en EKTA →',
       hotel_note_link: '🏨 ¿Necesitas hospedaje? Cotiza aquí →',
+      share_whatsapp: '📤 Compartir por WhatsApp',
+      share_message: '✈️ ¡Mira este vuelo! {origin} → {destination} con {airline} por ${price}. {link}',
     },
     en: {
       h1: 'Your next trip,<br><em>at the best price.</em>',
@@ -711,6 +713,8 @@
       insurance_estimate: '🛡️ Estimated travel insurance: ${low}-${high}',
       insurance_quote_link: 'Get a real quote at EKTA →',
       hotel_note_link: '🏨 Need a place to stay? Get a quote →',
+      share_whatsapp: '📤 Share on WhatsApp',
+      share_message: '✈️ Check out this flight! {origin} → {destination} with {airline} for ${price}. {link}',
     },
   };
 
@@ -1254,6 +1258,13 @@
     const insuranceLow = (offer.price * 0.05).toFixed(0);
     const insuranceHigh = (offer.price * 0.08).toFixed(0);
 
+    const shareMessage = t('share_message', {
+      origin: payload.origin, destination: payload.destination,
+      airline: offer.airline, price: offer.price.toFixed(0),
+      link: link || '',
+    });
+    const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+
     return `
       <div class="price-row">
         <div class="price-row-header">
@@ -1264,6 +1275,7 @@
           ${t('follow_this')}
         </button>
         ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
+        <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link" style="color:#25D366;">${t('share_whatsapp')}</a>
         <div class="calendar-status" style="padding:6px 0 0; font-size:11px;">
           ${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })} ·
           <a href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue);">${t('insurance_quote_link')}</a>
@@ -1435,6 +1447,38 @@
   // --- "Mis rutas guardadas" ---
   const myRoutesBtn = document.getElementById('my-routes-btn');
   const myRoutesBox = document.getElementById('my-routes-box');
+  // Gráfica simple (SVG) del historial de precio de una ruta — para que
+  // se vea de un vistazo si ha subido, bajado, o se ha mantenido plano.
+  function renderPriceSparkline(history) {
+    if (!history || history.length < 2) return ''; // no hay suficientes puntos para una línea
+
+    const prices = history.map((h) => h.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min || 1; // evita dividir entre 0 si todos son iguales
+    const width = 280;
+    const height = 50;
+    const padding = 4;
+
+    const points = history.map((h, i) => {
+      const x = (i / (history.length - 1)) * (width - padding * 2) + padding;
+      const y = height - padding - ((h.price - min) / range) * (height - padding * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    // Verde si el último precio es igual o menor al primero, rojo si subió.
+    const trendColor = prices[prices.length - 1] <= prices[0] ? '#2F7D5C' : '#8C2F39';
+
+    return `
+      <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:44px; margin-top:4px;" preserveAspectRatio="none">
+        <polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <div class="calendar-status" style="padding:0; font-size:10px; display:flex; justify-content:space-between;">
+        <span>$${min.toFixed(0)}</span>
+        <span>$${max.toFixed(0)}</span>
+      </div>`;
+  }
+
   myRoutesBtn.addEventListener('click', async () => {
     clearError();
     const email = getUserEmail();
@@ -1477,12 +1521,14 @@
           }
         }
         const routeLink = buildAffiliateLink(r.origin, r.destination, r.depart_date, r.return_date, r.passengers);
+        const sparkline = renderPriceSparkline(r.price_history);
         html += `
           <div class="price-row">
             <div class="price-row-header">
               <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel}${airlineLabel})</span>
             </div>
             <div class="calendar-status" style="padding:0;">${priceLabel}</div>
+            ${sparkline}
             ${routeLink ? `<a class="book-link" href="${routeLink}" target="_blank" rel="noopener">Reservar →</a>` : ''}
             <button type="button" class="channel-option" data-remove-id="${r.id}" style="margin-top:6px; width:100%;">🗑️ Eliminar</button>
           </div>`;
