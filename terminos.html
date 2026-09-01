@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Términos y condiciones — Trackear Vuelos</title>
+<title data-i18n="page_title">Términos y condiciones — Trackear Vuelos</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -14,7 +14,7 @@
     line-height: 1.6;
   }
   h1 {
-    color: #2481cc;
+    color: #1D4ED8;
     font-size: 24px;
   }
   h2 {
@@ -25,7 +25,7 @@
   a.back-link {
     display: inline-block;
     margin-bottom: 20px;
-    color: #2481cc;
+    color: #1D4ED8;
     text-decoration: none;
     font-size: 14px;
   }
@@ -36,78 +36,127 @@
     font-size: 12px;
     color: #888;
   }
+  #lang-switch-btn {
+    float: right;
+    background: #F4F8FF;
+    border: 1px solid #D7E2F7;
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1D4ED8;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
-  <a class="back-link" href="index.html">← Volver al buscador</a>
+  <button type="button" id="lang-switch-btn">🌐 EN</button>
+  <a class="back-link" href="index.html" data-i18n="back_link">← Volver al buscador</a>
 
-  <h1>Términos y condiciones</h1>
-  <p class="updated">Última actualización: agosto 2026</p>
+  <h1 data-i18n="h1">Términos y condiciones</h1>
+  <p class="updated" data-i18n="updated">Última actualización: agosto 2026</p>
 
-  <p>
+  <p data-i18n="intro">
     Al usar Trackear Vuelos, aceptas estos términos. Los escribimos de forma
     simple y directa — si algo no queda claro, escríbenos.
   </p>
 
-  <h2>1. Qué es Trackear Vuelos</h2>
-  <p>
-    Somos una herramienta de búsqueda y seguimiento de precios de vuelos.
-    <strong>No somos una aerolínea ni una agencia de viajes</strong>, y no
-    procesamos pagos ni emitimos boletos. Cuando decides reservar, te
-    dirigimos a plataformas de terceros (como Aviasales) donde se completa
-    la compra real, bajo sus propios términos y condiciones.
-  </p>
+  <h2 data-i18n="h2_1">1. Qué es Trackear Vuelos</h2>
+  <p data-i18n-html="p_1"></p>
 
-  <h2>2. Precisión de los precios</h2>
-  <p>
-    Los precios que mostramos vienen de fuentes de datos externas y pueden
-    cambiar entre el momento que los ves y el momento que reservas —
-    incluyendo disponibilidad, impuestos, o tarifas que la aerolínea o
-    plataforma de reserva ajuste. Siempre confirma el precio final en el
-    sitio donde completes tu compra.
-  </p>
+  <h2 data-i18n="h2_2">2. Precisión de los precios</h2>
+  <p data-i18n="p_2"></p>
 
-  <h2>3. Notificaciones</h2>
-  <p>
-    Si guardas una ruta, podemos enviarte notificaciones por correo
-    electrónico o notificaciones push (si las activaste) sobre cambios de
-    precio. Puedes eliminar tus rutas guardadas o desactivar las
-    notificaciones push desde la configuración de tu navegador o dispositivo
-    en cualquier momento.
-  </p>
+  <h2 data-i18n="h2_3">3. Notificaciones</h2>
+  <p data-i18n="p_3"></p>
 
-  <h2>4. Enlaces de afiliado</h2>
-  <p>
-    Algunos enlaces en este sitio (vuelos, seguros de viaje, autos, entradas,
-    compensación por vuelos, etc.) son enlaces de afiliado — si reservas a
-    través de ellos, podemos recibir una comisión del proveedor, sin costo
-    adicional para ti.
-  </p>
+  <h2 data-i18n="h2_4">4. Enlaces de afiliado</h2>
+  <p data-i18n="p_4"></p>
 
-  <h2>5. Sin garantías</h2>
-  <p>
-    Ofrecemos esta herramienta "tal cual", sin garantizar que esté libre de
-    errores o interrupciones. No somos responsables por pérdidas derivadas
-    de decisiones de compra basadas en la información mostrada aquí, ni por
-    problemas con reservas hechas en plataformas de terceros.
-  </p>
+  <h2 data-i18n="h2_5">5. Sin garantías</h2>
+  <p data-i18n="p_5"></p>
 
-  <h2>6. Cambios a estos términos</h2>
-  <p>
-    Podemos actualizar estos términos ocasionalmente. Si seguimos cambios
-    importantes, lo indicaremos en esta misma página.
-  </p>
+  <h2 data-i18n="h2_6">6. Cambios a estos términos</h2>
+  <p data-i18n="p_6"></p>
 
-  <h2>7. Contacto</h2>
-  <p>
-    ¿Preguntas? Escríbenos a
-    <a href="mailto:trackearvuelos@gmail.com">trackearvuelos@gmail.com</a>.
-  </p>
+  <h2 data-i18n="h2_7">7. Contacto</h2>
+  <p data-i18n-html="p_7"></p>
 
   <p style="margin-top: 32px; font-size: 13px; color: #888;">
-    <a href="acerca.html" style="color:#888;">Acerca de nosotros</a>
+    <a href="acerca.html" style="color:#888;" data-i18n="about_link">Acerca de nosotros</a>
   </p>
+
+<script>
+  const TRANSLATIONS = {
+    es: {
+      page_title: 'Términos y condiciones — Trackear Vuelos',
+      back_link: '← Volver al buscador',
+      h1: 'Términos y condiciones',
+      updated: 'Última actualización: agosto 2026',
+      intro: 'Al usar Trackear Vuelos, aceptas estos términos. Los escribimos de forma simple y directa — si algo no queda claro, escríbenos.',
+      h2_1: '1. Qué es Trackear Vuelos',
+      p_1: 'Somos una herramienta de búsqueda y seguimiento de precios de vuelos. <strong>No somos una aerolínea ni una agencia de viajes</strong>, y no procesamos pagos ni emitimos boletos. Cuando decides reservar, te dirigimos a plataformas de terceros (como Aviasales) donde se completa la compra real, bajo sus propios términos y condiciones.',
+      h2_2: '2. Precisión de los precios',
+      p_2: 'Los precios que mostramos vienen de fuentes de datos externas y pueden cambiar entre el momento que los ves y el momento que reservas — incluyendo disponibilidad, impuestos, o tarifas que la aerolínea o plataforma de reserva ajuste. Siempre confirma el precio final en el sitio donde completes tu compra.',
+      h2_3: '3. Notificaciones',
+      p_3: 'Si guardas una ruta, podemos enviarte notificaciones por correo electrónico o notificaciones push (si las activaste) sobre cambios de precio. Puedes eliminar tus rutas guardadas o desactivar las notificaciones push desde la configuración de tu navegador o dispositivo en cualquier momento.',
+      h2_4: '4. Enlaces de afiliado',
+      p_4: 'Algunos enlaces en este sitio (vuelos, seguros de viaje, autos, entradas, compensación por vuelos, etc.) son enlaces de afiliado — si reservas a través de ellos, podemos recibir una comisión del proveedor, sin costo adicional para ti.',
+      h2_5: '5. Sin garantías',
+      p_5: 'Ofrecemos esta herramienta "tal cual", sin garantizar que esté libre de errores o interrupciones. No somos responsables por pérdidas derivadas de decisiones de compra basadas en la información mostrada aquí, ni por problemas con reservas hechas en plataformas de terceros.',
+      h2_6: '6. Cambios a estos términos',
+      p_6: 'Podemos actualizar estos términos ocasionalmente. Si seguimos cambios importantes, lo indicaremos en esta misma página.',
+      h2_7: '7. Contacto',
+      p_7: '¿Preguntas? Escríbenos a <a href="mailto:trackearvuelos@gmail.com">trackearvuelos@gmail.com</a>.',
+      about_link: 'Acerca de nosotros',
+    },
+    en: {
+      page_title: 'Terms and Conditions — Trackear Vuelos',
+      back_link: '← Back to search',
+      h1: 'Terms and Conditions',
+      updated: 'Last updated: August 2026',
+      intro: "By using Trackear Vuelos, you accept these terms. We wrote them simply and directly — if something isn't clear, write to us.",
+      h2_1: '1. What Trackear Vuelos is',
+      p_1: "We're a flight price search and tracking tool. <strong>We are not an airline or a travel agency</strong>, and we don't process payments or issue tickets. When you decide to book, we send you to third-party platforms (like Aviasales) where the actual purchase happens, under their own terms and conditions.",
+      h2_2: '2. Price accuracy',
+      p_2: 'The prices we show come from external data sources and can change between when you see them and when you book — including availability, taxes, or fees the airline or booking platform adjusts. Always confirm the final price on the site where you complete your purchase.',
+      h2_3: '3. Notifications',
+      p_3: 'If you save a route, we may send you email or push notifications (if enabled) about price changes. You can delete your saved routes or disable push notifications from your browser or device settings at any time.',
+      h2_4: '4. Affiliate links',
+      p_4: 'Some links on this site (flights, travel insurance, car rentals, tickets, flight compensation, etc.) are affiliate links — if you book through them, we may earn a commission from the provider, at no extra cost to you.',
+      h2_5: '5. No warranties',
+      p_5: 'We offer this tool "as is", without guaranteeing it is free of errors or interruptions. We are not responsible for losses resulting from purchase decisions based on the information shown here, nor for issues with bookings made on third-party platforms.',
+      h2_6: '6. Changes to these terms',
+      p_6: 'We may update these terms occasionally. If we make significant changes, we will note it on this same page.',
+      h2_7: '7. Contact',
+      p_7: 'Questions? Write to us at <a href="mailto:trackearvuelos@gmail.com">trackearvuelos@gmail.com</a>.',
+      about_link: 'About us',
+    },
+  };
+
+  let currentLang = localStorage.getItem('flightbot_lang') || 'es';
+
+  function applyTranslations() {
+    document.documentElement.lang = currentLang;
+    const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.es;
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      el.textContent = dict[el.dataset.i18n] || TRANSLATIONS.es[el.dataset.i18n] || el.dataset.i18n;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+      el.innerHTML = dict[el.dataset.i18nHtml] || TRANSLATIONS.es[el.dataset.i18nHtml] || '';
+    });
+    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+  }
+
+  document.getElementById('lang-switch-btn').addEventListener('click', () => {
+    currentLang = currentLang === 'es' ? 'en' : 'es';
+    localStorage.setItem('flightbot_lang', currentLang);
+    applyTranslations();
+  });
+
+  applyTranslations();
+</script>
 
 </body>
 </html>
