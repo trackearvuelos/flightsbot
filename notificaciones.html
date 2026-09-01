@@ -117,6 +117,10 @@
     <div class="field">
       <label for="user-email" data-i18n="email_label"></label>
       <input type="email" id="user-email" placeholder="tu@correo.com">
+      <div class="checkbox-row" style="margin-top:6px; margin-bottom:0;">
+        <input type="checkbox" id="remember-email-checkbox">
+        <label for="remember-email-checkbox" data-i18n="remember_email"></label>
+      </div>
     </div>
 
     <div class="field" id="verification-box" style="display:none;">
@@ -168,6 +172,7 @@
       title: '🔔 Notificaciones',
       subtitle: 'Verifica tu correo y elige cómo quieres que te avisemos cuando baje un precio.',
       email_label: 'Tu correo',
+      remember_email: 'Recordar mi correo en este dispositivo',
       send_code: '📧 Mandarme un código de verificación',
       resend_code: '📧 Reenviar código',
       code_ph: 'Código de 6 dígitos',
@@ -188,6 +193,7 @@
       push_activated: '✅ Notificaciones activadas',
       push_activating: 'Activando...',
       push_not_standalone: '💡 Para activar push, primero agrega esta app a tu pantalla de inicio y ábrela desde ahí.',
+      err_permission_denied: 'Ya habías desactivado las notificaciones antes — el navegador no me deja pedirte el permiso de nuevo automáticamente. Actívalo manualmente: en iPhone, ve a Configuración → Notificaciones → busca esta app. En Android, mantén presionado el ícono de la app → Info de la app → Notificaciones. En la computadora, toca el candado 🔒 junto a la dirección del sitio → Notificaciones → Permitir.',
       sending_code: 'Enviando código...',
       code_sent: 'Te enviamos un código de verificación (revisa spam también):',
       verified: '✅ Correo verificado.',
@@ -197,6 +203,7 @@
       title: '🔔 Notifications',
       subtitle: 'Verify your email and choose how you want us to alert you when a price drops.',
       email_label: 'Your email',
+      remember_email: 'Remember my email on this device',
       send_code: '📧 Send me a verification code',
       resend_code: '📧 Resend code',
       code_ph: '6-digit code',
@@ -217,6 +224,7 @@
       push_activated: '✅ Notifications enabled',
       push_activating: 'Activating...',
       push_not_standalone: '💡 To enable push, first add this app to your home screen and open it from there.',
+      err_permission_denied: "You already turned off notifications before — the browser won't let me ask again automatically. Turn it on manually: on iPhone, go to Settings → Notifications → find this app. On Android, long-press the app icon → App info → Notifications. On a computer, tap the lock icon 🔒 next to the site address → Notifications → Allow.",
       sending_code: 'Sending code...',
       code_sent: "We sent you a verification code (check spam too):",
       verified: '✅ Email verified.',
@@ -246,7 +254,18 @@
     return email.includes('@') && email.includes('.') ? email : null;
   }
 
+  let inMemorySession = null;
+
+  function saveSession(email, sessionToken) {
+    inMemorySession = { email, session_token: sessionToken };
+    const rememberCheckbox = document.getElementById('remember-email-checkbox');
+    if (rememberCheckbox && rememberCheckbox.checked) {
+      localStorage.setItem('flightbot_session', JSON.stringify(inMemorySession));
+    }
+  }
+
   function getValidSessionToken() {
+    if (inMemorySession && inMemorySession.email === getUserEmail()) return inMemorySession.session_token;
     try {
       const saved = JSON.parse(localStorage.getItem('flightbot_session') || 'null');
       if (saved && saved.email === getUserEmail() && saved.session_token) return saved.session_token;
@@ -305,7 +324,7 @@
       });
       const data = await resp.json();
       if (data.success) {
-        localStorage.setItem('flightbot_session', JSON.stringify({ email, session_token: data.session_token }));
+        saveSession(email, data.session_token);
         verificationStatus.textContent = t('verified');
         codeEntryRow.style.display = 'none';
         syncChannelsUI();
@@ -341,8 +360,17 @@
     enablePushBtn.disabled = true;
     enablePushBtn.textContent = t('push_activating');
     try {
+      // Si ya estaba en "denied" de antes, ni siquiera vale la pena
+      // llamar requestPermission() — la mayoría de los navegadores
+      // ya NO muestran el cuadro de permiso otra vez una vez que se
+      // negó, así que hay que mandar a la persona a la configuración
+      // manualmente en vez de intentarlo de nuevo sin avisar por qué.
+      if (Notification.permission === 'denied') {
+        throw new Error(t('err_permission_denied'));
+      }
+
       const permission = await Notification.requestPermission();
-      if (permission !== 'granted') throw new Error('Permiso denegado.');
+      if (permission !== 'granted') throw new Error(t('err_permission_denied'));
 
       const registration = await navigator.serviceWorker.ready;
       const VAPID_PUBLIC_KEY = 'BMAyKv0opzePpAxUxSf9ggWA0APlsSQxIoPvyPWqEPFLj1sn_4VXN_VF-P-yXHdHAm7OP4S9dt9utch94fPlvk4';

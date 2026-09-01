@@ -46,8 +46,9 @@
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0;
+    margin: 0 auto;
     padding: 16px;
+    max-width: 480px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
     color: var(--tg-theme-text-color, var(--ink));
@@ -412,7 +413,12 @@
   .qr-box {
     position: fixed;
     top: 12px;
-    right: 12px;
+    /* En pantallas angostas (celular) se comporta igual que antes:
+       12px del borde. En pantallas anchas (escritorio), en vez de
+       pegarse al borde del NAVEGADOR, se alinea con el borde derecho
+       de tu contenido (que tiene max-width: 480px, centrado) — así no
+       da la sensación de que la página "ocupa toda la pantalla". */
+    right: max(12px, calc(50vw - 240px + 12px));
     z-index: 100;
     padding: 6px;
     border-radius: 10px;
@@ -623,6 +629,10 @@
   <div class="field">
     <label for="user-email" data-i18n="email_label"></label>
     <input type="email" id="user-email" placeholder="tu@correo.com">
+    <div class="checkbox-row" style="margin-top:6px; margin-bottom:0;">
+      <input type="checkbox" id="remember-email-checkbox">
+      <label for="remember-email-checkbox" data-i18n="remember_email"></label>
+    </div>
     <div style="font-size:11px; color:var(--tg-theme-hint-color, #666666); margin-top:4px;" data-i18n-html="terms_note">
     </div>
   </div>
@@ -703,6 +713,7 @@
       max_price_label: 'Avisarme si baja de (opcional, USD)',
       max_price_ph: 'Ej: 450',
       email_label: 'Tu correo (para guardar tus rutas y avisos)',
+      remember_email: 'Recordar mi correo en este dispositivo',
       terms_note: 'Al continuar, aceptas nuestros <a href="terminos.html" target="_blank" style="color:var(--tg-theme-link-color, #1D4ED8);">Términos y condiciones</a>.',
       resend_code: '📧 Mandarme un código de verificación',
       code_ph: 'Código de 6 dígitos',
@@ -782,6 +793,7 @@
       max_price_label: 'Alert me if it drops below (optional, USD)',
       max_price_ph: 'E.g.: 450',
       email_label: 'Your email (to save your routes and alerts)',
+      remember_email: 'Remember my email on this device',
       terms_note: 'By continuing, you accept our <a href="terminos.html" target="_blank" style="color:var(--tg-theme-link-color, #1D4ED8);">Terms and Conditions</a>.',
       resend_code: '📧 Send me a verification code',
       code_ph: '6-digit code',
@@ -1316,7 +1328,22 @@
   const verifyCodeInput = document.getElementById('verify-code-input');
   const confirmCodeBtn = document.getElementById('confirm-code-btn');
 
+  // Si la persona NO marca "Recordar mi correo", igual necesitamos que
+  // la sesión funcione por el resto de ESTA visita (por ejemplo, para
+  // que "Ver mis rutas guardadas" funcione justo después de verificar)
+  // — solo que no sobrevive a un refresh ni a la próxima vez que entre.
+  let inMemorySession = null;
+
+  function saveSession(email, sessionToken) {
+    inMemorySession = { email, session_token: sessionToken };
+    const rememberCheckbox = document.getElementById('remember-email-checkbox');
+    if (rememberCheckbox && rememberCheckbox.checked) {
+      localStorage.setItem('flightbot_session', JSON.stringify(inMemorySession));
+    }
+  }
+
   function getStoredSession() {
+    if (inMemorySession) return inMemorySession;
     try {
       const raw = localStorage.getItem('flightbot_session');
       return raw ? JSON.parse(raw) : null;
@@ -1415,7 +1442,7 @@
       });
       const data = await resp.json();
       if (data.success) {
-        localStorage.setItem('flightbot_session', JSON.stringify({ email, session_token: data.session_token }));
+        saveSession(email, data.session_token);
         verificationStatus.textContent = '✅ Correo verificado. Ya puedes ver/borrar tus rutas.';
         codeEntryRow.style.display = 'none';
         if (pendingRetryFn) {
