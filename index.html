@@ -354,6 +354,48 @@
     background: var(--brand-blue);
     color: #ffffff;
   }
+  .card {
+    background: #ffffff;
+    border: 1px solid var(--dash);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  #world-map-wrap {
+    position: relative;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #EAF2FF 0%, #F8FBFF 100%);
+  }
+  #world-map-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .map-dot-grid circle {
+    fill: #C9DBF5;
+  }
+  .map-pin-group { cursor: pointer; }
+  .map-pin-circle {
+    fill: var(--brand-wine);
+    stroke: #ffffff;
+    stroke-width: 2;
+  }
+  .map-pin-origin {
+    fill: var(--brand-blue);
+    stroke: #ffffff;
+    stroke-width: 2;
+  }
+  .map-pin-price {
+    font-size: 13px;
+    font-weight: 700;
+    fill: var(--ink);
+  }
+  .map-pin-city {
+    font-size: 9px;
+    fill: var(--ink-soft);
+  }
+  .map-pin-dim { opacity: 0.15; }
   .qr-box {
     position: fixed;
     top: 12px;
@@ -476,6 +518,16 @@
     <a href="notificaciones.html" class="top-service-card">
       <span class="svc-icon">🔔</span><br><span data-i18n="svc_notifications"></span>
     </a>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="price-calendar-title" data-i18n="map_title" style="margin-bottom:2px;"></div>
+    <div class="calendar-status" style="padding:0 0 10px; font-size:11px;" data-i18n="map_disclaimer"></div>
+    <input type="text" id="map-search-input" data-i18n-ph="map_search_ph" style="margin-bottom:10px;">
+    <div id="world-map-wrap">
+      <svg id="world-map-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div id="map-empty-note" class="calendar-status" style="display:none;"></div>
   </div>
 
   <div class="qr-box" id="qr-badge" title="Toca para agrandar y escanear">
@@ -607,6 +659,10 @@
       svc_cars: 'Autos',
       svc_stays: 'Hospedajes',
       svc_notifications: 'Notificaciones',
+      map_title: '🗺️ Explora el mundo',
+      map_disclaimer: 'Precios aproximados desde San Juan (SJU), pueden variar — actualizados una vez al día.',
+      map_search_ph: 'Busca un país o ciudad...',
+      map_no_match: 'No encontramos ese destino en el mapa.',
       qr_click: 'Clickea el app',
       qr_modal_text: '<strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio el app, y guarda tus rutas para empezar a recibir alertas.',
       close: 'Cerrar',
@@ -681,6 +737,10 @@
       svc_cars: 'Car rentals',
       svc_stays: 'Stays',
       svc_notifications: 'Notifications',
+      map_title: '🗺️ Explore the world',
+      map_disclaimer: 'Approximate prices from San Juan (SJU), may vary — updated once a day.',
+      map_search_ph: 'Search a country or city...',
+      map_no_match: "We couldn't find that destination on the map.",
       qr_click: 'Tap for the app',
       qr_modal_text: '<strong>📱 Take Trackear Vuelos with you</strong><br>Scan, add it to your home screen, and save your routes to start getting alerts.',
       close: 'Close',
@@ -778,6 +838,7 @@
     currentLang = currentLang === 'es' ? 'en' : 'es';
     localStorage.setItem('flightbot_lang', currentLang);
     applyTranslations();
+    if (typeof loadWorldMap === 'function') loadWorldMap(); // refresca nombres de ciudades en el idioma nuevo
     // Si ya está verificado, avisamos al Worker del cambio para que los
     // correos/push automáticos futuros también respeten el idioma nuevo.
     const session = getValidSessionToken ? getValidSessionToken() : null;
@@ -808,6 +869,122 @@
 
   // El QR pequeño de la esquina es solo una insignia — al tocarlo, se
   // abre agrandado en un modal para que sí se pueda escanear de verdad.
+  // ============================================================
+  // Mapa mundial de precios aproximados (actualizados 1 vez al día).
+  // No es un mapa geográfico exacto — es un "mapa de puntos" simple,
+  // con cada ciudad ubicada según su latitud/longitud real, proyectada
+  // sobre un rectángulo. Suficiente para explorar visualmente, sin
+  // necesitar datos cartográficos precisos de países.
+  // ============================================================
+  const CITY_INFO = {
+    SJU: { lat: 18.4, lng: -66.0, es: 'San Juan', en: 'San Juan', country_es: 'Puerto Rico', country_en: 'Puerto Rico' },
+    MAD: { lat: 40.4, lng: -3.7, es: 'Madrid', en: 'Madrid', country_es: 'España', country_en: 'Spain' },
+    BCN: { lat: 41.3, lng: 2.2, es: 'Barcelona', en: 'Barcelona', country_es: 'España', country_en: 'Spain' },
+    LHR: { lat: 51.5, lng: -0.1, es: 'Londres', en: 'London', country_es: 'Reino Unido', country_en: 'United Kingdom' },
+    CDG: { lat: 49.0, lng: 2.5, es: 'París', en: 'Paris', country_es: 'Francia', country_en: 'France' },
+    FCO: { lat: 41.8, lng: 12.5, es: 'Roma', en: 'Rome', country_es: 'Italia', country_en: 'Italy' },
+    AMS: { lat: 52.3, lng: 4.8, es: 'Ámsterdam', en: 'Amsterdam', country_es: 'Países Bajos', country_en: 'Netherlands' },
+    LIS: { lat: 38.7, lng: -9.1, es: 'Lisboa', en: 'Lisbon', country_es: 'Portugal', country_en: 'Portugal' },
+    MEX: { lat: 19.4, lng: -99.1, es: 'Ciudad de México', en: 'Mexico City', country_es: 'México', country_en: 'Mexico' },
+    BOG: { lat: 4.7, lng: -74.1, es: 'Bogotá', en: 'Bogota', country_es: 'Colombia', country_en: 'Colombia' },
+    LIM: { lat: -12.0, lng: -77.0, es: 'Lima', en: 'Lima', country_es: 'Perú', country_en: 'Peru' },
+    SCL: { lat: -33.4, lng: -70.6, es: 'Santiago', en: 'Santiago', country_es: 'Chile', country_en: 'Chile' },
+    EZE: { lat: -34.8, lng: -58.5, es: 'Buenos Aires', en: 'Buenos Aires', country_es: 'Argentina', country_en: 'Argentina' },
+    PTY: { lat: 9.0, lng: -79.4, es: 'Ciudad de Panamá', en: 'Panama City', country_es: 'Panamá', country_en: 'Panama' },
+    CUN: { lat: 21.0, lng: -86.8, es: 'Cancún', en: 'Cancun', country_es: 'México', country_en: 'Mexico' },
+    MIA: { lat: 25.8, lng: -80.2, es: 'Miami', en: 'Miami', country_es: 'Estados Unidos', country_en: 'United States' },
+    JFK: { lat: 40.6, lng: -73.8, es: 'Nueva York', en: 'New York', country_es: 'Estados Unidos', country_en: 'United States' },
+    LAX: { lat: 33.9, lng: -118.4, es: 'Los Ángeles', en: 'Los Angeles', country_es: 'Estados Unidos', country_en: 'United States' },
+    NRT: { lat: 35.7, lng: 140.4, es: 'Tokio', en: 'Tokyo', country_es: 'Japón', country_en: 'Japan' },
+    DXB: { lat: 25.3, lng: 55.4, es: 'Dubái', en: 'Dubai', country_es: 'Emiratos Árabes Unidos', country_en: 'United Arab Emirates' },
+    SYD: { lat: -33.9, lng: 151.2, es: 'Sídney', en: 'Sydney', country_es: 'Australia', country_en: 'Australia' },
+  };
+
+  function projectLatLng(lat, lng) {
+    const x = ((lng + 180) / 360) * 1000;
+    const y = ((90 - lat) / 180) * 500;
+    return { x, y };
+  }
+
+  async function loadWorldMap() {
+    const svg = document.getElementById('world-map-svg');
+
+    // Fondo: una cuadrícula sutil de puntos, solo para dar sensación de
+    // "mapa" sin necesitar contornos reales de países.
+    let dotsHtml = '<g class="map-dot-grid">';
+    for (let x = 20; x < 1000; x += 40) {
+      for (let y = 20; y < 500; y += 40) {
+        dotsHtml += `<circle cx="${x}" cy="${y}" r="1.4"/>`;
+      }
+    }
+    dotsHtml += '</g>';
+
+    // Marcador del origen (San Juan) — siempre visible, en azul.
+    const originPos = projectLatLng(CITY_INFO.SJU.lat, CITY_INFO.SJU.lng);
+    let originHtml = `
+      <g class="map-pin-group" data-city="SJU">
+        <circle class="map-pin-origin" cx="${originPos.x}" cy="${originPos.y}" r="6"/>
+        <text class="map-pin-city" x="${originPos.x}" y="${originPos.y - 10}" text-anchor="middle">${CITY_INFO.SJU.es}</text>
+      </g>`;
+
+    svg.innerHTML = dotsHtml + originHtml;
+
+    try {
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=get_map_prices`);
+      const data = await resp.json();
+      if (!data.success) return;
+
+      let pinsHtml = '';
+      for (const row of data.prices) {
+        const info = CITY_INFO[row.destination];
+        if (!info) continue;
+        const pos = projectLatLng(info.lat, info.lng);
+        const cityName = currentLang === 'en' ? info.en : info.es;
+        const countryName = currentLang === 'en' ? info.country_en : info.country_es;
+        pinsHtml += `
+          <g class="map-pin-group" data-city="${row.destination}" data-search="${(cityName + ' ' + countryName).toLowerCase()}">
+            <circle class="map-pin-circle" cx="${pos.x}" cy="${pos.y}" r="5"/>
+            <text class="map-pin-price" x="${pos.x}" y="${pos.y - 9}" text-anchor="middle">$${Math.round(row.price)}</text>
+            <text class="map-pin-city" x="${pos.x}" y="${pos.y + 15}" text-anchor="middle">${cityName}</text>
+          </g>`;
+      }
+      svg.innerHTML = dotsHtml + originHtml + pinsHtml;
+
+      // Tocar un pin arma la búsqueda con ese destino directo.
+      svg.querySelectorAll('.map-pin-group[data-city]').forEach((pin) => {
+        if (pin.dataset.city === 'SJU') return;
+        pin.addEventListener('click', () => {
+          document.getElementById('destination').value = pin.dataset.city;
+          document.getElementById('destination').dataset.code = pin.dataset.city;
+          document.getElementById('destination').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      });
+    } catch {
+      // si falla, se queda solo con el punto de origen — no rompemos nada
+    }
+  }
+
+  loadWorldMap();
+
+  function stripAccents(str) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  const mapSearchInput = document.getElementById('map-search-input');
+  const mapEmptyNote = document.getElementById('map-empty-note');
+  mapSearchInput.addEventListener('input', () => {
+    const query = stripAccents(mapSearchInput.value.trim().toLowerCase());
+    const pins = document.querySelectorAll('#world-map-svg .map-pin-group[data-search]');
+    let anyMatch = false;
+    pins.forEach((pin) => {
+      const matches = !query || stripAccents(pin.dataset.search).includes(query);
+      pin.classList.toggle('map-pin-dim', !matches);
+      if (matches) anyMatch = true;
+    });
+    mapEmptyNote.style.display = (query && !anyMatch) ? 'block' : 'none';
+    mapEmptyNote.textContent = t('map_no_match');
+  });
+
   const qrBadge = document.getElementById('qr-badge');
   const qrModalOverlay = document.getElementById('qr-modal-overlay');
   const qrModalClose = document.getElementById('qr-modal-close');
