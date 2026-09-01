@@ -1236,6 +1236,30 @@
     return n === 1 ? '1 pasajero' : `${n} pasajeros`;
   }
 
+  function formatClock(isoString) {
+    if (!isoString) return '';
+    const match = isoString.match(/T(\d{2}):(\d{2})/);
+    return match ? `${match[1]}:${match[2]}` : '';
+  }
+  function formatDuration(minutes) {
+    if (!minutes) return '';
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h}h ${m}m`;
+  }
+  function stopsLabel(stops) {
+    if (stops === 0) return currentLang === 'en' ? 'Nonstop' : 'Sin escalas';
+    if (stops === 1) return currentLang === 'en' ? '1 stop' : '1 escala';
+    return currentLang === 'en' ? `${stops} stops` : `${stops} escalas`;
+  }
+  function renderLegDetails(leg) {
+    if (!leg) return '';
+    const time = `${formatClock(leg.departure_time)} → ${formatClock(leg.arrival_time)}`;
+    const parts = [time, formatDuration(leg.duration_minutes), stopsLabel(leg.stops)];
+    if (leg.aircraft) parts.push(leg.aircraft);
+    return `<div class="calendar-status" style="padding:2px 0;">✈️ ${leg.departure_airport} → ${leg.arrival_airport} · ${parts.join(' · ')}</div>`;
+  }
+
   function renderOfferPreviewRow(offer, payload) {
     const paxLabel = paxLabelClient(payload.passengers);
     const perPersonNote = payload.passengers > 1 && offer.price_per_person
@@ -1272,6 +1296,9 @@
           <span>✈️ ${offer.airline} (${paxLabel})</span>
           <span class="price-tag">$${offer.price.toFixed(0)}${perPersonNote}</span>
         </div>
+        ${renderLegDetails(offer.outbound)}
+        ${renderLegDetails(offer.inbound)}
+        ${offer.cabin_class ? `<div class="calendar-status" style="padding:0 0 2px;">💺 ${offer.cabin_class}</div>` : ''}
         <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff; border-color:transparent;">
           ${t('follow_this')}
         </button>
