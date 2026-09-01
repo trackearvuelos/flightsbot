@@ -52,6 +52,25 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
     color: var(--tg-theme-text-color, var(--ink));
+    position: relative;
+  }
+  #bg-map-decoration {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 480px;
+    opacity: 0.06;
+    z-index: 0;
+    pointer-events: none;
+  }
+  #bg-map-decoration .map-country {
+    fill: var(--brand-blue);
+    stroke: none;
+  }
+  #page-content {
+    position: relative;
+    z-index: 1;
   }
   h1 {
     font-family: Georgia, 'Times New Roman', serif;
@@ -507,6 +526,14 @@
 </head>
 <body>
 
+  <!-- Mapa mundial muy tenue de fondo, decorativo — reutiliza los
+       mismos datos del mapa real que ya usamos en "Explora el mundo"
+       (ver <script id="world-map-data"> más abajo), copiados aquí por
+       JavaScript al cargar, para no duplicar el archivo. -->
+  <svg id="bg-map-decoration" viewBox="30.767 241.591 784.077 458.627" preserveAspectRatio="xMidYMid slice"></svg>
+
+  <div id="page-content">
+
   <div class="brand-row">
     <div class="brand-mark">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M2 20 L21 4 L15 21 L11 14 L2 20Z" fill="#ffffff"/></svg>
@@ -892,6 +919,12 @@
       }
     }
   });
+
+  // Fondo decorativo: copiamos los mismos datos del mapa real que ya
+  // usamos en "Explora el mundo" (ver <script id="world-map-data">),
+  // así no duplicamos el archivo — solo reutilizamos lo que ya está.
+  document.getElementById('bg-map-decoration').innerHTML =
+    document.getElementById('world-map-data').textContent;
 
   applyTranslations();
 
@@ -1794,6 +1827,8 @@
   // "🔍 Buscar el vuelo más barato" (más arriba) llama directo al
   // Worker vía fetch, así que funciona igual dentro o fuera de Telegram.
 </script>
+
+  </div><!-- /#page-content -->
 
 <!-- Sello de confianza de TrustedSite (verificación de malware/phishing).
      Por defecto se muestra flotando en la esquina inferior derecha. -->
