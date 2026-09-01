@@ -335,6 +335,12 @@
     font-weight: 600;
     line-height: 1.3;
   }
+  .svc-icon {
+    font-size: 22px;
+    line-height: 1;
+    display: inline-block;
+    margin-bottom: 4px;
+  }
   .top-service-card:active {
     background: var(--brand-blue);
     color: #ffffff;
@@ -444,19 +450,19 @@
 
   <div class="top-services-row">
     <a href="https://ektatraveling.tpk.lu/IjpTBuOL" target="_blank" rel="noopener" class="top-service-card">
-      🛡️<br><span data-i18n="svc_insurance"></span>
+      <span class="svc-icon">🛡️</span><br><span data-i18n="svc_insurance"></span>
     </a>
     <a href="https://airhelp.tpk.lu/RgybwSak" target="_blank" rel="noopener" class="top-service-card">
-      🧳<br><span data-i18n="svc_delay"></span>
+      <span class="svc-icon">🧳</span><br><span data-i18n="svc_delay"></span>
     </a>
     <a href="https://tiqets.tpk.lu/To1czhFY" target="_blank" rel="noopener" class="top-service-card">
-      🎟️<br><span data-i18n="svc_tickets"></span>
+      <span class="svc-icon">🎟️</span><br><span data-i18n="svc_tickets"></span>
     </a>
     <a href="https://getrentacar.tpk.lu/gAjVHyvJ" target="_blank" rel="noopener" class="top-service-card">
-      🚗<br><span data-i18n="svc_cars"></span>
+      <span class="svc-icon">🚗</span><br><span data-i18n="svc_cars"></span>
     </a>
-    <a href="https://kkday.tpk.lu/X7dTEzSr" target="_blank" rel="noopener" class="top-service-card">
-      🏨<br><span data-i18n="svc_stays"></span>
+    <a href="https://kkday.tpk.lu/5urmUSJX" target="_blank" rel="noopener" class="top-service-card">
+      <span class="svc-icon">🏨</span><br><span data-i18n="svc_stays"></span>
     </a>
   </div>
 
@@ -574,7 +580,7 @@
       svc_delay: '¿Se retrasó tu vuelo? Te ayudamos',
       svc_tickets: 'Entradas',
       svc_cars: 'Autos',
-      svc_stays: 'Estadías',
+      svc_stays: 'Hospedajes',
       qr_click: 'Clickea el app',
       qr_modal_text: '<strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio el app, y guarda tus rutas para empezar a recibir alertas.',
       close: 'Cerrar',
@@ -623,6 +629,9 @@
       no_live_price: 'Guardada. No encontramos precio en vivo ahora mismo, lo seguiremos intentando.',
       notif_sent: '📨 Confirmación enviada por correo.',
       notif_error: '⚠️ No se pudo mandar la notificación: {err}',
+      insurance_estimate: '🛡️ Seguro de viaje estimado: ${low}-${high}',
+      insurance_quote_link: 'Cotiza el real en EKTA →',
+      hotel_note_link: '🏨 ¿Necesitas hospedaje? Cotiza aquí →',
     },
     en: {
       h1: 'Your next trip,<br><em>at the best price.</em>',
@@ -680,6 +689,9 @@
       no_live_price: "Saved. We couldn't find a live price right now, we'll keep trying.",
       notif_sent: '📨 Confirmation sent by email.',
       notif_error: "⚠️ Couldn't send the notification: {err}",
+      insurance_estimate: '🛡️ Estimated travel insurance: ${low}-${high}',
+      insurance_quote_link: 'Get a real quote at EKTA →',
+      hotel_note_link: '🏨 Need a place to stay? Get a quote →',
     },
   };
 
@@ -1214,6 +1226,15 @@
     // general de esta ruta/fechas, donde puedes elegir esa aerolínea tú
     // mismo si aparece ahí también.
     const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
+
+    // Seguro de viaje: no tenemos acceso a la API de precios real de EKTA,
+    // pero los seguros de viaje típicamente cuestan 5-8% del costo del
+    // viaje — mostramos ese RANGO como estimado, dejando claro que hay
+    // que cotizar el real. Nunca inventamos un número para el hotel
+    // porque no tenemos ninguna base razonable para estimarlo.
+    const insuranceLow = (offer.price * 0.05).toFixed(0);
+    const insuranceHigh = (offer.price * 0.08).toFixed(0);
+
     return `
       <div class="price-row">
         <div class="price-row-header">
@@ -1224,6 +1245,13 @@
           ${t('follow_this')}
         </button>
         ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
+        <div class="calendar-status" style="padding:6px 0 0; font-size:11px;">
+          ${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })} ·
+          <a href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue);">${t('insurance_quote_link')}</a>
+        </div>
+        <div class="calendar-status" style="padding:2px 0 0;">
+          <a href="https://kkday.tpk.lu/5urmUSJX" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">${t('hotel_note_link')}</a>
+        </div>
       </div>`;
   }
 
