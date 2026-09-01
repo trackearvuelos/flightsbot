@@ -538,7 +538,7 @@
     <div class="calendar-status" style="padding:0 0 10px; font-size:11px;" data-i18n="map_disclaimer"></div>
     <div style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:14px;">
       <div id="recommended-flights-col" style="flex:1 1 130px; min-width:130px;">
-        <div class="price-calendar-title" data-i18n="recommended_title" style="font-size:11px; margin-bottom:6px;"></div>
+        <div id="recommended-title" class="price-calendar-title" data-i18n="recommended_title" style="font-size:11px; margin-bottom:6px;"></div>
         <div id="recommended-flights-list"></div>
       </div>
       <div id="world-map-col" style="flex:1 1 160px; min-width:160px;">
@@ -882,6 +882,28 @@
   });
 
   applyTranslations();
+
+  // El buscador del mapa (columna derecha) es más alto que el título
+  // "Recomendados de hoy" (columna izquierda) — sin este ajuste, el
+  // contenido de abajo (la lista vs. el mapa) queda desalineado, aunque
+  // ambos títulos empiecen a la misma altura.
+  function alignRecommendedListToMap() {
+    const title = document.getElementById('recommended-title');
+    const recommendedCol = document.getElementById('recommended-flights-col');
+    const mapWrap = document.getElementById('world-map-wrap');
+    const mapCol = document.getElementById('world-map-col');
+    if (!title || !recommendedCol || !mapWrap || !mapCol) return;
+
+    // Le damos el espacio al margen INFERIOR del título (no al superior
+    // de la lista) — así evitamos el problema de que los márgenes entre
+    // hermanos "se combinen" en vez de sumarse.
+    title.style.marginBottom = '0px';
+    const titleOffset = title.getBoundingClientRect().bottom - recommendedCol.getBoundingClientRect().top;
+    const mapOffset = mapWrap.getBoundingClientRect().top - mapCol.getBoundingClientRect().top;
+    const diff = mapOffset - titleOffset;
+    if (diff > 0) title.style.marginBottom = `${diff}px`;
+  }
+  alignRecommendedListToMap();
 
   window.addEventListener('load', () => {
     // Registramos el Service Worker (necesario para poder recibir
