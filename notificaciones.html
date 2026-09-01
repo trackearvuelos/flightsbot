@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notificaciones — Trackear Vuelos</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1D4ED8">
+<style>
+  :root {
+    color-scheme: light;
+    --brand-blue: #1D4ED8;
+    --brand-wine: #8C2F39;
+    --ink: #16223A;
+    --ink-soft: #5B6B85;
+    --ink-faint: #6B7A94;
+    --field-bg: #F4F8FF;
+    --dash: #D7E2F7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
+    color: var(--ink);
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  a.back-link {
+    display: inline-block;
+    margin-bottom: 18px;
+    color: var(--brand-blue);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 400;
+    font-size: 24px;
+    margin: 0 0 6px 0;
+  }
+  p.subtitle {
+    margin: 0 0 22px 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  #lang-switch-btn {
+    float: right;
+    background: var(--field-bg);
+    border: 1px solid var(--dash);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-blue);
+    cursor: pointer;
+  }
+  .field { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--ink-faint);
+  }
+  input[type="text"], input[type="email"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--dash);
+    background: var(--field-bg);
+    color: var(--ink);
+    font-size: 16px;
+  }
+  input:focus { outline: 2px solid var(--brand-blue); outline-offset: -1px; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .checkbox-row input { width: 18px; height: 18px; }
+  .checkbox-row label { margin: 0; font-size: 14px; font-weight: 400; color: var(--ink); }
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 11px;
+    border: 1px solid var(--dash);
+    background: var(--field-bg);
+    color: var(--brand-blue);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-primary { background: var(--brand-blue); color: #fff; border-color: transparent; }
+  .status { font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-bottom: 8px; }
+  .card {
+    background: #fff;
+    border: 1px solid var(--dash);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+  <button type="button" id="lang-switch-btn">🌐 EN</button>
+  <a class="back-link" href="index.html" data-i18n="back"></a>
+
+  <h1 data-i18n="title"></h1>
+  <p class="subtitle" data-i18n="subtitle"></p>
+
+  <div class="card">
+    <div class="field">
+      <label for="user-email" data-i18n="email_label"></label>
+      <input type="email" id="user-email" placeholder="tu@correo.com">
+    </div>
+
+    <div class="field" id="verification-box" style="display:none;">
+      <div class="status" id="verification-status"></div>
+      <button type="button" class="btn" id="request-code-btn" data-i18n="resend_code"></button>
+      <div id="code-entry-row" style="display:none; margin-top:8px;">
+        <input type="text" id="verify-code-input" data-i18n-ph="code_ph" maxlength="6" inputmode="numeric" style="margin-bottom:8px;">
+        <button type="button" class="btn" id="confirm-code-btn" data-i18n="confirm_code"></button>
+      </div>
+    </div>
+
+    <button type="button" class="btn" id="send-code-btn" data-i18n="send_code"></button>
+  </div>
+
+  <div class="card" id="channels-box" style="display:none;">
+    <label data-i18n="channels_label"></label>
+    <div class="checkbox-row">
+      <input type="checkbox" id="channel-email" checked>
+      <label for="channel-email" data-i18n="channel_email"></label>
+    </div>
+    <div class="checkbox-row" id="channel-push-row" style="display:none;">
+      <input type="checkbox" id="channel-push">
+      <label for="channel-push" data-i18n="channel_push"></label>
+    </div>
+    <button type="button" class="btn" id="enable-push-btn" style="display:none;" data-i18n="enable_push"></button>
+    <div class="status" id="push-status"></div>
+
+    <!-- WhatsApp: oculto hasta tener las credenciales de Meta (ver
+         WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID en el Worker).
+         Para reactivarlo, solo quita el "style=display:none" de este
+         div y del de abajo. -->
+    <div class="checkbox-row" style="display:none;">
+      <input type="checkbox" id="channel-whatsapp">
+      <label for="channel-whatsapp" data-i18n="channel_whatsapp"></label>
+    </div>
+    <div id="whatsapp-number-row" style="display:none; margin:6px 0;">
+      <input type="text" id="whatsapp-number-input" data-i18n-ph="whatsapp_number_ph">
+    </div>
+
+    <button type="button" class="btn btn-primary" id="save-channels-btn" style="margin-top:8px;" data-i18n="save_channels"></button>
+    <div class="status" id="channels-status"></div>
+  </div>
+
+<script>
+  const TRANSLATIONS = {
+    es: {
+      back: '← Volver al buscador',
+      title: '🔔 Notificaciones',
+      subtitle: 'Verifica tu correo y elige cómo quieres que te avisemos cuando baje un precio.',
+      email_label: 'Tu correo',
+      send_code: '📧 Mandarme un código de verificación',
+      resend_code: '📧 Reenviar código',
+      code_ph: 'Código de 6 dígitos',
+      confirm_code: '✅ Confirmar código',
+      channels_label: 'Canales de notificación (marca los que quieras)',
+      channel_email: '📧 Correo',
+      channel_push: '🔔 Notificaciones push',
+      channel_whatsapp: '💬 WhatsApp (muy pronto)',
+      enable_push: '🔔 Activar notificaciones push en este dispositivo',
+      whatsapp_number_ph: 'Tu número con código de país, ej: +17871234567',
+      save_channels: 'Guardar canales',
+      saving_channels: 'Guardando...',
+      channels_saved: '✅ Canales guardados. Te mandamos una prueba por cada uno.',
+      err_pick_channel: 'Marca al menos un canal.',
+      err_push_first: 'Primero activa el permiso de push en este dispositivo (botón de arriba).',
+      err_whatsapp_number: 'Escribe tu número de WhatsApp primero.',
+      err_email: 'Escribe un correo válido arriba primero.',
+      push_activated: '✅ Notificaciones activadas',
+      push_activating: 'Activando...',
+      push_not_standalone: '💡 Para activar push, primero agrega esta app a tu pantalla de inicio y ábrela desde ahí.',
+      sending_code: 'Enviando código...',
+      code_sent: 'Te enviamos un código de verificación (revisa spam también):',
+      verified: '✅ Correo verificado.',
+    },
+    en: {
+      back: '← Back to search',
+      title: '🔔 Notifications',
+      subtitle: 'Verify your email and choose how you want us to alert you when a price drops.',
+      email_label: 'Your email',
+      send_code: '📧 Send me a verification code',
+      resend_code: '📧 Resend code',
+      code_ph: '6-digit code',
+      confirm_code: '✅ Confirm code',
+      channels_label: 'Notification channels (check any you want)',
+      channel_email: '📧 Email',
+      channel_push: '🔔 Push notifications',
+      channel_whatsapp: '💬 WhatsApp (coming soon)',
+      enable_push: '🔔 Enable push notifications on this device',
+      whatsapp_number_ph: 'Your number with country code, e.g.: +17871234567',
+      save_channels: 'Save channels',
+      saving_channels: 'Saving...',
+      channels_saved: '✅ Channels saved. We sent a test through each one.',
+      err_pick_channel: 'Check at least one channel.',
+      err_push_first: 'First enable push permission on this device (button above).',
+      err_whatsapp_number: 'Enter your WhatsApp number first.',
+      err_email: 'Enter a valid email above first.',
+      push_activated: '✅ Notifications enabled',
+      push_activating: 'Activating...',
+      push_not_standalone: '💡 To enable push, first add this app to your home screen and open it from there.',
+      sending_code: 'Sending code...',
+      code_sent: "We sent you a verification code (check spam too):",
+      verified: '✅ Email verified.',
+    },
+  };
+
+  let currentLang = localStorage.getItem('flightbot_lang') || 'es';
+  function t(key) { return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) || TRANSLATIONS.es[key] || key; }
+  function applyTranslations() {
+    document.documentElement.lang = currentLang;
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+  }
+  document.getElementById('lang-switch-btn').addEventListener('click', () => {
+    currentLang = currentLang === 'es' ? 'en' : 'es';
+    localStorage.setItem('flightbot_lang', currentLang);
+    applyTranslations();
+  });
+  applyTranslations();
+
+  const CALENDAR_PROXY_URL = "https://flightsprices.duardipr.workers.dev";
+
+  function getUserEmail() {
+    const input = document.getElementById('user-email');
+    const email = input.value.trim();
+    return email.includes('@') && email.includes('.') ? email : null;
+  }
+
+  function getValidSessionToken() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('flightbot_session') || 'null');
+      if (saved && saved.email === getUserEmail() && saved.session_token) return saved.session_token;
+    } catch {}
+    return null;
+  }
+
+  const verificationBox = document.getElementById('verification-box');
+  const verificationStatus = document.getElementById('verification-status');
+  const codeEntryRow = document.getElementById('code-entry-row');
+  const requestCodeBtn = document.getElementById('request-code-btn');
+  const confirmCodeBtn = document.getElementById('confirm-code-btn');
+  const sendCodeBtn = document.getElementById('send-code-btn');
+
+  async function sendVerificationCode(email) {
+    verificationStatus.textContent = t('sending_code');
+    try {
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=request_verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, language: currentLang }),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        verificationStatus.textContent = t('code_sent');
+        codeEntryRow.style.display = 'block';
+      } else {
+        verificationStatus.textContent = `⚠️ ${data.error || 'Error'}`;
+      }
+    } catch (err) {
+      verificationStatus.textContent = `⚠️ ${err.message}`;
+    }
+  }
+
+  sendCodeBtn.addEventListener('click', () => {
+    const email = getUserEmail();
+    if (!email) { alert(t('err_email')); return; }
+    verificationBox.style.display = 'block';
+    sendVerificationCode(email);
+  });
+  requestCodeBtn.addEventListener('click', () => {
+    const email = getUserEmail();
+    if (email) sendVerificationCode(email);
+  });
+
+  confirmCodeBtn.addEventListener('click', async () => {
+    const email = getUserEmail();
+    const code = document.getElementById('verify-code-input').value.trim();
+    if (!email || !code) return;
+    confirmCodeBtn.disabled = true;
+    try {
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=confirm_email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        localStorage.setItem('flightbot_session', JSON.stringify({ email, session_token: data.session_token }));
+        verificationStatus.textContent = t('verified');
+        codeEntryRow.style.display = 'none';
+        syncChannelsUI();
+      } else {
+        verificationStatus.textContent = `⚠️ ${data.error || 'Error'}`;
+      }
+    } catch (err) {
+      verificationStatus.textContent = `⚠️ ${err.message}`;
+    } finally {
+      confirmCodeBtn.disabled = false;
+    }
+  });
+
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  const enablePushBtn = document.getElementById('enable-push-btn');
+  const pushStatus = document.getElementById('push-status');
+
+  if (isStandalone) {
+    enablePushBtn.style.display = 'block';
+    document.getElementById('channel-push-row').style.display = 'flex';
+  }
+
+  enablePushBtn.addEventListener('click', async () => {
+    const email = getUserEmail();
+    const sessionToken = getValidSessionToken();
+    if (!email || !sessionToken) { pushStatus.textContent = `⚠️ ${t('err_email')}`; return; }
+
+    enablePushBtn.disabled = true;
+    enablePushBtn.textContent = t('push_activating');
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('Permiso denegado.');
+
+      const registration = await navigator.serviceWorker.ready;
+      const VAPID_PUBLIC_KEY = 'BMAyKv0opzePpAxUxSf9ggWA0APlsSQxIoPvyPWqEPFLj1sn_4VXN_VF-P-yXHdHAm7OP4S9dt9utch94fPlvk4';
+      function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = atob(base64);
+        return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+      }
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=save_push_subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, session_token: sessionToken, subscription }),
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || 'Error');
+
+      enablePushBtn.textContent = t('push_activated');
+      enablePushBtn.disabled = true;
+      document.getElementById('channel-push').checked = true;
+    } catch (err) {
+      pushStatus.textContent = `⚠️ ${err.message}`;
+      enablePushBtn.disabled = false;
+      enablePushBtn.textContent = t('enable_push');
+    }
+  });
+
+  const channelWhatsappCheckbox = document.getElementById('channel-whatsapp');
+  document.getElementById('channel-whatsapp').addEventListener('change', () => {
+    document.getElementById('whatsapp-number-row').style.display = channelWhatsappCheckbox.checked ? 'block' : 'none';
+  });
+
+  const saveChannelsBtn = document.getElementById('save-channels-btn');
+  const channelsStatus = document.getElementById('channels-status');
+  saveChannelsBtn.addEventListener('click', async () => {
+    const email = getUserEmail();
+    const sessionToken = getValidSessionToken();
+    if (!email || !sessionToken) { channelsStatus.textContent = `⚠️ ${t('err_email')}`; return; }
+
+    const channels = [];
+    if (document.getElementById('channel-email').checked) channels.push('email');
+    if (document.getElementById('channel-push').checked) channels.push('push');
+    if (channelWhatsappCheckbox.checked) channels.push('whatsapp');
+    if (channels.length === 0) { channelsStatus.textContent = `⚠️ ${t('err_pick_channel')}`; return; }
+
+    const whatsappNumber = document.getElementById('whatsapp-number-input').value.trim();
+    if (channelWhatsappCheckbox.checked && !whatsappNumber) {
+      channelsStatus.textContent = `⚠️ ${t('err_whatsapp_number')}`;
+      return;
+    }
+
+    saveChannelsBtn.disabled = true;
+    saveChannelsBtn.textContent = t('saving_channels');
+    channelsStatus.textContent = '';
+    try {
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=set_channels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, session_token: sessionToken, channels, whatsapp_number: whatsappNumber || null }),
+      });
+      const data = await resp.json();
+      if (!data.success && data.needs_push_subscription) {
+        channelsStatus.textContent = `⚠️ ${t('err_push_first')}`;
+      } else if (!data.success) {
+        channelsStatus.textContent = `⚠️ ${data.error || 'Error'}`;
+      } else {
+        channelsStatus.textContent = t('channels_saved');
+      }
+    } catch (err) {
+      channelsStatus.textContent = `⚠️ ${err.message}`;
+    } finally {
+      saveChannelsBtn.disabled = false;
+      saveChannelsBtn.textContent = t('save_channels');
+    }
+  });
+
+  async function syncChannelsUI() {
+    document.getElementById('channels-box').style.display = 'block';
+    const email = getUserEmail();
+    const sessionToken = getValidSessionToken();
+    if (!email || !sessionToken) return;
+    try {
+      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=get_settings&email=${encodeURIComponent(email)}&session_token=${encodeURIComponent(sessionToken)}`);
+      const data = await resp.json();
+      if (!data.success) return;
+      document.getElementById('channel-email').checked = data.channels.includes('email');
+      let pushStillValid = false;
+      if (data.channels.includes('push') && 'serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const existingSub = await registration.pushManager.getSubscription();
+          pushStillValid = existingSub !== null;
+        } catch { pushStillValid = false; }
+      }
+      document.getElementById('channel-push').checked = pushStillValid;
+      if (pushStillValid) {
+        enablePushBtn.textContent = t('push_activated');
+        enablePushBtn.disabled = true;
+      }
+      if (data.whatsapp_number) {
+        document.getElementById('whatsapp-number-input').value = data.whatsapp_number;
+      }
+    } catch {}
+  }
+
+  window.addEventListener('load', () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    }
+    if (getValidSessionToken()) {
+      verificationStatus.textContent = t('verified');
+      syncChannelsUI();
+    }
+  });
+</script>
+
+</body>
+</html>

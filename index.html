@@ -473,6 +473,9 @@
     <a href="https://kkday.tpk.lu/5urmUSJX" target="_blank" rel="noopener" class="top-service-card">
       <span class="svc-icon">🏨</span><br><span data-i18n="svc_stays"></span>
     </a>
+    <a href="notificaciones.html" class="top-service-card">
+      <span class="svc-icon">🔔</span><br><span data-i18n="svc_notifications"></span>
+    </a>
   </div>
 
   <div class="qr-box" id="qr-badge" title="Toca para agrandar y escanear">
@@ -558,39 +561,6 @@
     </div>
   </div>
 
-  <button type="button" class="calendar-btn" id="enable-push-btn" style="display:none;" data-i18n="enable_push">
-  </button>
-  <div class="calendar-status" id="push-status"></div>
-
-  <div class="field" id="channels-box" style="display:none;">
-    <label data-i18n="channels_label"></label>
-    <div class="checkbox-row">
-      <input type="checkbox" id="channel-email" checked>
-      <label for="channel-email" data-i18n="channel_email"></label>
-    </div>
-    <!-- Push: por seguridad/privacidad (computadoras públicas), solo se
-         muestra cuando la app está instalada (modo standalone) — se
-         revela vía JS más abajo si aplica. -->
-    <div class="checkbox-row" id="channel-push-row" style="display:none;">
-      <input type="checkbox" id="channel-push">
-      <label for="channel-push" data-i18n="channel_push"></label>
-    </div>
-    <!-- WhatsApp: oculto hasta tener las credenciales de Meta (ver
-         WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID en el Worker).
-         Para reactivarlo, solo quita el "style=display:none" de este
-         div y del de abajo. -->
-    <div class="checkbox-row" style="display:none;">
-      <input type="checkbox" id="channel-whatsapp">
-      <label for="channel-whatsapp" data-i18n="channel_whatsapp"></label>
-    </div>
-    <div id="whatsapp-number-row" style="display:none; margin:6px 0;">
-      <input type="text" id="whatsapp-number-input" data-i18n-ph="whatsapp_number_ph">
-    </div>
-    <button type="button" class="calendar-btn" id="save-channels-btn" style="margin-top:8px;" data-i18n="save_channels">
-    </button>
-    <div class="calendar-status" id="channels-status"></div>
-  </div>
-
   <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#1D4ED8); color:#fff; font-weight:700; border-color:transparent;" data-i18n="search_btn">
   </button>
   <div class="price-calendar" id="track-result-box"></div>
@@ -610,9 +580,16 @@
   </div>
 
 <script>
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
+  // El script de Telegram es opcional — ya NO usamos ninguna función
+  // suya en la interfaz real. Si por algún motivo no carga (firewall
+  // corporativo, bloqueador de anuncios, red restringida, etc.), la app
+  // debe seguir funcionando normal para todos los demás, en vez de
+  // romperse por completo desde la primera línea.
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+  }
 
   // ============================================================
   // Sistema de traducción (español/inglés). El idioma se guarda en
@@ -629,6 +606,7 @@
       svc_tickets: 'Entradas',
       svc_cars: 'Autos',
       svc_stays: 'Hospedajes',
+      svc_notifications: 'Notificaciones',
       qr_click: 'Clickea el app',
       qr_modal_text: '<strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio el app, y guarda tus rutas para empezar a recibir alertas.',
       close: 'Cerrar',
@@ -702,6 +680,7 @@
       svc_tickets: 'Tickets',
       svc_cars: 'Car rentals',
       svc_stays: 'Stays',
+      svc_notifications: 'Notifications',
       qr_click: 'Tap for the app',
       qr_modal_text: '<strong>📱 Take Trackear Vuelos with you</strong><br>Scan, add it to your home screen, and save your routes to start getting alerts.',
       close: 'Close',
@@ -817,51 +796,15 @@
   applyTranslations();
 
   window.addEventListener('load', () => {
-    // Si ya había una sesión verificada de una visita anterior, mostramos
-    // directo la sección de canales sin tener que verificar de nuevo.
-    if (getValidSessionToken()) {
-      document.getElementById('channels-box').style.display = 'block';
-    }
-
     // Registramos el Service Worker (necesario para poder recibir
-    // notificaciones push reales, incluso con la app cerrada).
+    // notificaciones push reales, incluso con la app cerrada — la
+    // activación en sí ahora vive en notificaciones.html).
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').catch((err) => {
         console.error('No se pudo registrar el Service Worker:', err);
       });
     }
-
-    // El botón de "Activar notificaciones push" solo aparece cuando la
-    // app ya está instalada (modo standalone) — no tiene sentido
-    // ofrecerlo en una pestaña normal del navegador, ya que ahí ese tipo
-    // de notificación es menos confiable/consistente entre navegadores.
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true; // Safari/iOS
-    if (isStandalone) {
-      const btn = document.getElementById('enable-push-btn');
-      btn.style.display = 'block';
-      document.getElementById('channel-push-row').style.display = 'flex';
-
-      // Si este dispositivo ya tiene una suscripción activa (de una
-      // visita anterior), lo mostramos de inmediato como "activado" —
-      // no hace falta pedir permiso de nuevo ni tocar nada.
-      if ('serviceWorker' in navigator && 'PushManager' in window) {
-        navigator.serviceWorker.ready
-          .then((registration) => registration.pushManager.getSubscription())
-          .then((existingSub) => {
-            if (existingSub) markPushAsActivated();
-          })
-          .catch(() => {});
-      }
-    }
   });
-
-  function markPushAsActivated() {
-    const btn = document.getElementById('enable-push-btn');
-    btn.textContent = t('push_activated');
-    btn.disabled = true;
-  }
 
   // El QR pequeño de la esquina es solo una insignia — al tocarlo, se
   // abre agrandado en un modal para que sí se pueda escanear de verdad.
@@ -1233,7 +1176,6 @@
         localStorage.setItem('flightbot_session', JSON.stringify({ email, session_token: data.session_token }));
         verificationStatus.textContent = '✅ Correo verificado. Ya puedes ver/borrar tus rutas.';
         codeEntryRow.style.display = 'none';
-        document.getElementById('channels-box').style.display = 'block';
         if (pendingRetryFn) {
           const retry = pendingRetryFn;
           pendingRetryFn = null;
@@ -1433,128 +1375,6 @@
     } finally {
       searchFlightBtn.disabled = false;
       searchFlightBtn.textContent = t('search_btn');
-    }
-  });
-
-  // --- Activar notificaciones push reales ---
-  const enablePushBtn = document.getElementById('enable-push-btn');
-  const pushStatus = document.getElementById('push-status');
-
-  enablePushBtn.addEventListener('click', async () => {
-    clearError();
-    const email = getUserEmail();
-    if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
-    const sessionToken = getValidSessionToken();
-    if (!sessionToken) { promptVerification('Verifica tu correo antes de activar las notificaciones push.', () => enablePushBtn.click()); return; }
-
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      pushStatus.textContent = '⚠️ Tu navegador no soporta notificaciones push.';
-      return;
-    }
-
-    enablePushBtn.disabled = true;
-    enablePushBtn.textContent = 'Activando...';
-    let activated = false;
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        pushStatus.textContent = '⚠️ No diste permiso de notificaciones. Actívalo desde la configuración del navegador si cambias de opinión.';
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-      }
-
-      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=save_push_subscription`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, session_token: sessionToken, subscription: subscription.toJSON() }),
-      });
-      const data = await resp.json();
-
-      if (!data.success && data.needs_verification) {
-        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.', () => enablePushBtn.click());
-      } else if (!data.success) {
-        pushStatus.textContent = `⚠️ ${data.error || 'No se pudo activar.'}`;
-      } else if (data.test_sent) {
-        pushStatus.textContent = '✅ Notificaciones push activadas. Te mandamos una de prueba.';
-        activated = true;
-      } else {
-        // Se guardó la suscripción aunque la prueba haya fallado — igual
-        // cuenta como "activado", ya no hace falta volver a tocar el botón.
-        pushStatus.textContent = `⚠️ Se guardó, pero la prueba falló: ${data.test_error || ''}`;
-        activated = true;
-      }
-    } catch (err) {
-      pushStatus.textContent = '⚠️ Error activando notificaciones: ' + err.message;
-    } finally {
-      if (activated) {
-        markPushAsActivated();
-      } else {
-        enablePushBtn.disabled = false;
-        enablePushBtn.textContent = '🔔 Activar notificaciones push';
-      }
-    }
-  });
-
-  // --- Canales de notificación (varios a la vez) ---
-  const channelWhatsappCheckbox = document.getElementById('channel-whatsapp');
-  const whatsappNumberRow = document.getElementById('whatsapp-number-row');
-  channelWhatsappCheckbox.addEventListener('change', () => {
-    whatsappNumberRow.style.display = channelWhatsappCheckbox.checked ? 'block' : 'none';
-  });
-
-  const saveChannelsBtn = document.getElementById('save-channels-btn');
-  const channelsStatus = document.getElementById('channels-status');
-  saveChannelsBtn.addEventListener('click', async () => {
-    const email = getUserEmail();
-    if (!email) { showError(t('err_email')); return; }
-    const sessionToken = getValidSessionToken();
-    if (!sessionToken) { promptVerification(t('err_email'), () => saveChannelsBtn.click()); return; }
-
-    const channels = [];
-    if (document.getElementById('channel-email').checked) channels.push('email');
-    if (document.getElementById('channel-push').checked) channels.push('push');
-    if (channelWhatsappCheckbox.checked) channels.push('whatsapp');
-
-    if (channels.length === 0) { channelsStatus.textContent = `⚠️ ${t('err_pick_channel')}`; return; }
-
-    const whatsappNumber = document.getElementById('whatsapp-number-input').value.trim();
-    if (channelWhatsappCheckbox.checked && !whatsappNumber) {
-      channelsStatus.textContent = `⚠️ ${t('err_whatsapp_number')}`;
-      return;
-    }
-
-    saveChannelsBtn.disabled = true;
-    saveChannelsBtn.textContent = t('saving_channels');
-    channelsStatus.textContent = '';
-    try {
-      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=set_channels`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, session_token: sessionToken, channels, whatsapp_number: whatsappNumber || null }),
-      });
-      const data = await resp.json();
-      if (!data.success && data.needs_verification) {
-        promptVerification(t('err_email'), () => saveChannelsBtn.click());
-      } else if (!data.success && data.needs_push_subscription) {
-        channelsStatus.textContent = `⚠️ ${t('err_push_first')}`;
-      } else if (!data.success) {
-        channelsStatus.textContent = `⚠️ ${data.error || 'Error'}`;
-      } else {
-        channelsStatus.textContent = t('channels_saved');
-      }
-    } catch (err) {
-      channelsStatus.textContent = `⚠️ ${err.message}`;
-    } finally {
-      saveChannelsBtn.disabled = false;
-      saveChannelsBtn.textContent = t('save_channels');
     }
   });
 
