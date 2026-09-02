@@ -420,16 +420,30 @@
     stroke-width: 4;
   }
   .map-pin-price {
-    font-size: 34px;
+    font-size: 22px;
     font-weight: 700;
     fill: var(--ink);
     paint-order: stroke;
     stroke: #ffffff;
     stroke-width: 6px;
+    transition: font-size 0.15s ease;
   }
   .map-pin-city {
     display: none;
+    font-size: 15px;
+    font-weight: 600;
     fill: var(--ink-soft);
+    paint-order: stroke;
+    stroke: #ffffff;
+    stroke-width: 5px;
+  }
+  .map-pin-group:hover .map-pin-price,
+  .map-pin-group.active .map-pin-price {
+    font-size: 34px;
+  }
+  .map-pin-group:hover .map-pin-city,
+  .map-pin-group.active .map-pin-city {
+    display: block;
   }
   .map-pin-dim { opacity: 0.15; }
   #map-attribution {
@@ -1005,7 +1019,16 @@
     }).join('');
   }
 
+  let mapPricesLoadedOk = false;
   async function loadWorldMap(isRetry) {
+    // Si esta llamada es el reintento automático (por si el primer
+    // intento falló), pero MIENTRAS TANTO otra llamada ya tuvo éxito
+    // (por ejemplo, la persona cambió de idioma y eso disparó una
+    // consulta nueva que sí funcionó), no reconstruimos nada — evita
+    // borrar por accidente la vista previa que alguien esté viendo en
+    // ese momento en el mapa.
+    if (isRetry && mapPricesLoadedOk) return;
+
     const svg = document.getElementById('world-map-svg');
 
     // La primera vez, insertamos los contornos reales del mapa (una sola
@@ -1033,6 +1056,7 @@
       const data = await resp.json();
       if (!data.success) throw new Error('respuesta sin éxito');
 
+      mapPricesLoadedOk = true;
       renderRecommendedFlights(data.prices);
 
       for (const row of data.prices) {
@@ -1047,14 +1071,30 @@
         g.setAttribute('data-search', (cityName + ' ' + countryName).toLowerCase());
         g.innerHTML = `
           <circle class="map-pin-circle" cx="${info.x}" cy="${info.y}" r="6"/>
-          <text class="map-pin-price" x="${info.x}" y="${info.y - 10}" text-anchor="middle">$${Math.round(row.price)}</text>`;
+          <text class="map-pin-price" x="${info.x}" y="${info.y - 10}" text-anchor="middle">$${Math.round(row.price)}</text>
+          <text class="map-pin-city" x="${info.x}" y="${info.y - 26}" text-anchor="middle">${cityName}</text>`;
         svg.appendChild(g);
       }
 
-      // Tocar un pin arma la búsqueda con ese destino directo.
+      // En computadora (SÍ tiene cursor real): pasar el mouse ya
+      // muestra la vista previa, y un clic selecciona directo.
+      // En celular (sin cursor): el primer toque muestra la vista
+      // previa (precio agrandado + nombre), y un SEGUNDO toque en el
+      // MISMO pin ya selecciona ese destino — así se puede explorar
+      // varios sin seleccionar por accidente con el primer toque.
+      const hasRealCursor = window.matchMedia('(hover: hover)').matches;
       svg.querySelectorAll('.map-pin-group[data-city]').forEach((pin) => {
+        pin.addEventListener('mouseenter', () => svg.appendChild(pin));
         if (pin.dataset.city === 'SJU') return;
         pin.addEventListener('click', () => {
+          if (!hasRealCursor && !pin.classList.contains('active')) {
+            // Primer toque en celular: solo vista previa — quitamos
+            // "active" de cualquier otro pin (sin mover nada de
+            // posición en el DOM, para no interferir con el evento).
+            svg.querySelectorAll('.map-pin-group.active').forEach((p) => p.classList.remove('active'));
+            pin.classList.add('active');
+            return;
+          }
           document.getElementById('destination').value = pin.dataset.city;
           document.getElementById('destination').dataset.code = pin.dataset.city;
           document.getElementById('destination').scrollIntoView({ behavior: 'smooth', block: 'center' });
