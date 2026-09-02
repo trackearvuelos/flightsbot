@@ -1005,7 +1005,7 @@
     }).join('');
   }
 
-  async function loadWorldMap() {
+  async function loadWorldMap(isRetry) {
     const svg = document.getElementById('world-map-svg');
 
     // La primera vez, insertamos los contornos reales del mapa (una sola
@@ -1031,7 +1031,7 @@
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=get_map_prices`);
       const data = await resp.json();
-      if (!data.success) return;
+      if (!data.success) throw new Error('respuesta sin éxito');
 
       renderRecommendedFlights(data.prices);
 
@@ -1061,7 +1061,16 @@
         });
       });
     } catch {
-      // si falla, se queda solo con el punto de origen — no rompemos nada
+      // Reintentamos UNA vez si es la primera carga (la de apenas
+      // abrir la página) — a veces el Worker tarda un momento en
+      // "despertar" (arranque en frío) y la primerísima consulta
+      // falla, aunque el sitio funcione perfecto un segundo después.
+      // Sin este reintento, parecía que "cambiar de idioma arregla
+      // los precios" — en realidad cualquier segundo intento lo
+      // arreglaba, el idioma no tenía nada que ver.
+      if (!isRetry) {
+        setTimeout(() => loadWorldMap(true), 1500);
+      }
     }
   }
 
