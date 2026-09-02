@@ -282,6 +282,9 @@
     color: var(--tg-theme-hint-color, var(--ink-faint));
     margin-bottom: 8px;
   }
+  .recommended-row:hover, .recommended-row:active {
+    background: var(--field-bg);
+  }
   .price-row {
     display: flex;
     flex-direction: column;
@@ -988,11 +991,22 @@
       const info = CITY_INFO[row.destination];
       const cityName = info ? (currentLang === 'en' ? info.en : info.es) : row.destination;
       return `
-        <div class="calendar-status" style="padding:4px 0; display:flex; justify-content:space-between; font-size:11px;">
+        <div class="calendar-status recommended-row" data-city="${row.destination}" style="padding:6px 4px; display:flex; justify-content:space-between; font-size:11px; cursor:pointer; border-radius:6px;">
           <span>${cityName}</span>
           <strong style="color:var(--brand-wine);">$${Math.round(row.price)}</strong>
         </div>`;
     }).join('');
+
+    // Tocar una recomendación llena el destino y baja al buscador,
+    // igual que hacía el mapa antes.
+    list.querySelectorAll('.recommended-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        const destinationInput = document.getElementById('destination');
+        destinationInput.value = row.dataset.city;
+        destinationInput.dataset.code = row.dataset.city;
+        destinationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
   }
 
   // Cargamos los "Recomendados de hoy" (los 5 más baratos de los
