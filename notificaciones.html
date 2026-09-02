@@ -103,6 +103,27 @@
     padding: 16px;
     margin-bottom: 16px;
   }
+  .install-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .install-step-num {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--brand-blue);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 </style>
 </head>
 <body>
@@ -146,6 +167,26 @@
       <label for="channel-push" data-i18n="channel_push"></label>
     </div>
     <div class="status" id="push-not-standalone-note" data-i18n="push_not_standalone" style="display:none;"></div>
+
+    <!-- Android/Chrome: botón de 1 toque, aparece solo si el navegador
+         permite instalar (dispara el aviso nativo de "Add to Home
+         Screen" — no podemos saltárnoslo, pero sí ahorrar pasos). -->
+    <button type="button" class="btn btn-primary" id="install-app-btn" style="display:none;" data-i18n="install_app_btn"></button>
+
+    <!-- Instrucciones ilustradas — se muestran solo si NO apareció el
+         botón de arriba (iPhone nunca lo tiene; Android a veces
+         tampoco, según el navegador). -->
+    <div id="install-steps" style="display:none;">
+      <div class="install-step">
+        <span class="install-step-num">1</span>
+        <span id="install-step-1-text"></span>
+      </div>
+      <div class="install-step">
+        <span class="install-step-num">2</span>
+        <span id="install-step-2-text"></span>
+      </div>
+    </div>
+
     <img id="push-note-qr" src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" style="display:none; width:120px; height:120px; margin:8px 0; border-radius:8px; border:1px solid var(--dash);">
     <button type="button" class="btn" id="enable-push-btn" style="display:none;" data-i18n="enable_push"></button>
     <div class="status" id="push-status"></div>
@@ -195,6 +236,11 @@
       push_activating: 'Activando...',
       push_not_standalone: '💡 Para activar push, primero agrega esta app a tu pantalla de inicio y ábrela desde ahí.',
       err_permission_denied: 'Ya habías desactivado las notificaciones antes — el navegador no me deja pedirte el permiso de nuevo automáticamente. Actívalo manualmente: en iPhone, ve a Configuración → Notificaciones → busca esta app. En Android, mantén presionado el ícono de la app → Info de la app → Notificaciones. En la computadora, toca el candado 🔒 junto a la dirección del sitio → Notificaciones → Permitir.',
+      install_app_btn: '📲 Instalar app',
+      install_step_ios_1: 'Toca el botón de compartir (el cuadrito con la flecha hacia arriba) en la barra de tu navegador.',
+      install_step_ios_2: 'Busca y toca "Agregar a inicio" en la lista de opciones.',
+      install_step_android_1: 'Toca el menú (los 3 puntitos ⋮) en la esquina de tu navegador.',
+      install_step_android_2: 'Busca y toca "Agregar a pantalla de inicio" o "Instalar app".',
       sending_code: 'Enviando código...',
       code_sent: 'Te enviamos un código de verificación (revisa spam también):',
       verified: '✅ Correo verificado.',
@@ -226,6 +272,11 @@
       push_activating: 'Activating...',
       push_not_standalone: '💡 To enable push, first add this app to your home screen and open it from there.',
       err_permission_denied: "You already turned off notifications before — the browser won't let me ask again automatically. Turn it on manually: on iPhone, go to Settings → Notifications → find this app. On Android, long-press the app icon → App info → Notifications. On a computer, tap the lock icon 🔒 next to the site address → Notifications → Allow.",
+      install_app_btn: '📲 Install app',
+      install_step_ios_1: 'Tap the share button (the square with an arrow pointing up) in your browser bar.',
+      install_step_ios_2: 'Find and tap "Add to Home Screen" in the list of options.',
+      install_step_android_1: 'Tap the menu (the 3 dots ⋮) in the corner of your browser.',
+      install_step_android_2: 'Find and tap "Add to Home screen" or "Install app".',
       sending_code: 'Sending code...',
       code_sent: "We sent you a verification code (check spam too):",
       verified: '✅ Email verified.',
@@ -352,6 +403,37 @@
   } else {
     document.getElementById('push-not-standalone-note').style.display = 'block';
     document.getElementById('push-note-qr').style.display = 'block';
+
+    // Android/Chrome a veces deja instalar con un solo botón — si el
+    // navegador dispara este evento, lo guardamos para usarlo cuando
+    // la persona toque nuestro botón (el navegador exige que sea en
+    // respuesta a un toque, no lo podemos disparar solos).
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      document.getElementById('install-app-btn').style.display = 'block';
+      document.getElementById('install-steps').style.display = 'none';
+    });
+
+    document.getElementById('install-app-btn').addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      document.getElementById('install-app-btn').style.display = 'none';
+    });
+
+    // Si en 1.5 segundos el navegador NO ofreció el botón de arriba
+    // (iPhone nunca lo hace; algunos Android tampoco), mostramos los
+    // pasos ilustrados en su lugar, según la plataforma detectada.
+    setTimeout(() => {
+      if (document.getElementById('install-app-btn').style.display === 'block') return;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      document.getElementById('install-step-1-text').textContent = t(isIOS ? 'install_step_ios_1' : 'install_step_android_1');
+      document.getElementById('install-step-2-text').textContent = t(isIOS ? 'install_step_ios_2' : 'install_step_android_2');
+      document.getElementById('install-steps').style.display = 'block';
+    }, 1500);
   }
 
   enablePushBtn.addEventListener('click', async () => {
