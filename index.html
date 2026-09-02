@@ -120,6 +120,7 @@
     letter-spacing: 0.04em;
     color: var(--brand-blue);
     flex: 1;
+    white-space: nowrap;
   }
   #lang-switch-btn {
     background: var(--field-bg);
@@ -438,12 +439,31 @@
     padding: 2px 4px 0;
   }
   #install-app-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: 11px;
     font-weight: 700;
-    color: var(--brand-blue);
-    text-decoration: underline;
+    color: #ffffff;
+    text-decoration: none;
     white-space: nowrap;
     margin-right: 4px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--brand-blue) 0%, #163ea8 100%);
+    box-shadow: 0 2px 6px rgba(29, 78, 216, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  #install-app-link::before {
+    content: "📲";
+    font-size: 12px;
+    line-height: 1;
+  }
+  #install-app-link:hover {
+    box-shadow: 0 3px 10px rgba(29, 78, 216, 0.45);
+  }
+  #install-app-link:active {
+    transform: scale(0.96);
   }
   /* Al tocar el link de "Instala la app", se abre este modal con el
      QR a tamaño real, sí escaneable de verdad. */
