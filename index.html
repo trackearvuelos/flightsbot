@@ -420,7 +420,7 @@
     stroke-width: 4;
   }
   .map-pin-price {
-    font-size: 22px;
+    font-size: 28px;
     font-weight: 700;
     fill: var(--ink);
     paint-order: stroke;
@@ -430,7 +430,7 @@
   }
   .map-pin-city {
     display: none;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 600;
     fill: var(--ink-soft);
     paint-order: stroke;
@@ -439,7 +439,7 @@
   }
   .map-pin-group:hover .map-pin-price,
   .map-pin-group.active .map-pin-price {
-    font-size: 34px;
+    font-size: 42px;
   }
   .map-pin-group:hover .map-pin-city,
   .map-pin-group.active .map-pin-city {
@@ -1072,7 +1072,7 @@
         g.innerHTML = `
           <circle class="map-pin-circle" cx="${info.x}" cy="${info.y}" r="6"/>
           <text class="map-pin-price" x="${info.x}" y="${info.y - 10}" text-anchor="middle">$${Math.round(row.price)}</text>
-          <text class="map-pin-city" x="${info.x}" y="${info.y - 26}" text-anchor="middle">${cityName}</text>`;
+          <text class="map-pin-city" x="${info.x}" y="${info.y - 32}" text-anchor="middle">${cityName}</text>`;
         svg.appendChild(g);
       }
 
