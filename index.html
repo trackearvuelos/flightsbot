@@ -50,17 +50,31 @@
     padding: 16px;
     max-width: 480px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    /* Fondo de "rutas de vuelo": un patrón repetible (puntos conectados
-       por líneas punteadas, como el mapa de rutas de una aerolínea) en
-       capas con el degradado de siempre — se repite solo con CSS, así
-       que cubre toda la página sin importar qué tan larga sea, sin
-       distorsionarse ni necesitar JavaScript. */
-    background-image:
-      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22500%22%20height%3D%22300%22%3E%20%3Ccircle%20cx%3D%2220%22%20cy%3D%22240%22%20r%3D%223.5%22%20fill%3D%22%231D4ED8%22%20opacity%3D%220.45%22%2F%3E%20%3Ccircle%20cx%3D%22470%22%20cy%3D%2260%22%20r%3D%223.5%22%20fill%3D%22%238C2F39%22%20opacity%3D%220.45%22%2F%3E%20%3Ccircle%20cx%3D%22250%22%20cy%3D%2220%22%20r%3D%223%22%20fill%3D%22%238C2F39%22%20opacity%3D%220.4%22%2F%3E%20%3Ccircle%20cx%3D%2260%22%20cy%3D%2210%22%20r%3D%223%22%20fill%3D%22%238C2F39%22%20opacity%3D%220.4%22%2F%3E%20%3Cpath%20d%3D%22M20%2C240%20C150%2C180%20300%2C60%20470%2C60%22%20fill%3D%22none%22%20stroke%3D%22%231D4ED8%22%20stroke-width%3D%221.1%22%20stroke-dasharray%3D%221%206%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.4%22%2F%3E%20%3Cpath%20d%3D%22M20%2C240%20C40%2C140%2030%2C40%2060%2C10%22%20fill%3D%22none%22%20stroke%3D%22%231D4ED8%22%20stroke-width%3D%221.1%22%20stroke-dasharray%3D%221%206%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.4%22%2F%3E%20%3Cpath%20d%3D%22M20%2C240%20C120%2C150%20180%2C60%20250%2C20%22%20fill%3D%22none%22%20stroke%3D%22%231D4ED8%22%20stroke-width%3D%221.1%22%20stroke-dasharray%3D%221%206%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.4%22%2F%3E%20%3Cg%20transform%3D%22translate%28245%2C110%29%20rotate%28-33%29%20scale%280.9%29%22%3E%3Cpath%20d%3D%22M2%2020%20L21%204%20L15%2021%20L11%2014%20L2%2020Z%22%20fill%3D%22%231D4ED8%22%20opacity%3D%220.5%22%2F%3E%3C%2Fg%3E%20%3Cg%20transform%3D%22translate%2845%2C120%29%20rotate%28-72%29%20scale%280.75%29%22%3E%3Cpath%20d%3D%22M2%2020%20L21%204%20L15%2021%20L11%2014%20L2%2020Z%22%20fill%3D%22%231D4ED8%22%20opacity%3D%220.5%22%2F%3E%3C%2Fg%3E%20%3C%2Fsvg%3E"),
-      linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
-    background-repeat: repeat, no-repeat;
+    background: linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
     color: var(--tg-theme-text-color, var(--ink));
     position: relative;
+  }
+  /* Medio mundo a cada lado, solo en pantallas anchas donde hay
+     espacio vacío junto al contenido (max-width: 480px) — en
+     celular no aparecen, no hay espacio para ellos. */
+  .hemisphere-decoration {
+    display: none;
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    width: 400px;
+    opacity: 0.08;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .hemisphere-decoration .map-country {
+    fill: var(--brand-blue);
+    stroke: none;
+  }
+  #hemisphere-left { left: 0; }
+  #hemisphere-right { right: 0; }
+  @media (min-width: 1100px) {
+    .hemisphere-decoration { display: block; }
   }
   #page-content {
     position: relative;
@@ -520,6 +534,13 @@
 </head>
 <body>
 
+  <!-- Medio mundo a cada lado (solo pantallas anchas) — reutiliza los
+       mismos datos reales del mapa que ya usamos en "Explora el mundo"
+       (ver <script id="world-map-data"> más abajo), recortados a la
+       mitad izquierda/derecha por JavaScript al cargar. -->
+  <svg id="hemisphere-left" class="hemisphere-decoration" viewBox="30.767 241.591 392.04 458.627" preserveAspectRatio="xMaxYMid slice"></svg>
+  <svg id="hemisphere-right" class="hemisphere-decoration" viewBox="422.807 241.591 392.04 458.627" preserveAspectRatio="xMinYMid slice"></svg>
+
   <div id="page-content">
 
   <div class="brand-row">
@@ -907,6 +928,13 @@
       }
     }
   });
+
+  // Medio mundo a cada lado: copiamos los mismos datos del mapa real
+  // que ya usamos en "Explora el mundo" — no duplicamos el archivo,
+  // solo reutilizamos lo que ya está cargado en la página.
+  const worldMapDataText = document.getElementById('world-map-data').textContent;
+  document.getElementById('hemisphere-left').innerHTML = worldMapDataText;
+  document.getElementById('hemisphere-right').innerHTML = worldMapDataText;
 
   applyTranslations();
 
