@@ -146,6 +146,7 @@
       <label for="channel-push" data-i18n="channel_push"></label>
     </div>
     <div class="status" id="push-not-standalone-note" data-i18n="push_not_standalone" style="display:none;"></div>
+    <img id="push-note-qr" src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" style="display:none; width:120px; height:120px; margin:8px 0; border-radius:8px; border:1px solid var(--dash);">
     <button type="button" class="btn" id="enable-push-btn" style="display:none;" data-i18n="enable_push"></button>
     <div class="status" id="push-status"></div>
 
@@ -350,6 +351,7 @@
     document.getElementById('channel-push-row').style.display = 'flex';
   } else {
     document.getElementById('push-not-standalone-note').style.display = 'block';
+    document.getElementById('push-note-qr').style.display = 'block';
   }
 
   enablePushBtn.addEventListener('click', async () => {
