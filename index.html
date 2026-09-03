@@ -984,16 +984,28 @@
   // Los "5 recomendados de hoy" son simplemente los 5 destinos más
   // baratos del mismo grupo de precios que ya calculamos para el mapa
   // — sin hacer ninguna consulta extra.
+  function formatShortDate(isoDate) {
+    if (!isoDate) return '';
+    const [year, month, day] = isoDate.split('-');
+    return `${month}/${day}`;
+  }
+
   function renderRecommendedFlights(prices) {
     const list = document.getElementById('recommended-flights-list');
     const top5 = [...prices].sort((a, b) => a.price - b.price).slice(0, 5);
     list.innerHTML = top5.map((row) => {
       const info = CITY_INFO[row.destination];
       const cityName = info ? (currentLang === 'en' ? info.en : info.es) : row.destination;
+      const dateLabel = row.depart_date
+        ? `${formatShortDate(row.depart_date)}${row.return_date ? '–' + formatShortDate(row.return_date) : ''}`
+        : '';
       return `
-        <div class="calendar-status recommended-row" data-city="${row.destination}" style="padding:6px 4px; display:flex; justify-content:space-between; font-size:11px; cursor:pointer; border-radius:6px;">
-          <span>${cityName}</span>
-          <strong style="color:var(--brand-wine);">$${Math.round(row.price)}</strong>
+        <div class="calendar-status recommended-row" data-city="${row.destination}" data-depart="${row.depart_date || ''}" data-return="${row.return_date || ''}" style="padding:6px 4px; display:flex; flex-direction:column; cursor:pointer; border-radius:6px;">
+          <div style="display:flex; justify-content:space-between; font-size:11px;">
+            <span>${cityName}</span>
+            <strong style="color:var(--brand-wine);">$${Math.round(row.price)}</strong>
+          </div>
+          ${dateLabel ? `<span style="font-size:9px; color:var(--ink-faint);">${dateLabel}</span>` : ''}
         </div>`;
     }).join('');
 
@@ -1004,6 +1016,13 @@
         const destinationInput = document.getElementById('destination');
         destinationInput.value = row.dataset.city;
         destinationInput.dataset.code = row.dataset.city;
+        if (row.dataset.depart) {
+          document.getElementById('depart-date').value = row.dataset.depart;
+        }
+        if (row.dataset.return) {
+          document.getElementById('one-way').checked = false;
+          document.getElementById('return-date').value = row.dataset.return;
+        }
         destinationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     });
