@@ -325,12 +325,21 @@
     transition: width 0.3s ease;
   }
   .row-book-link {
-    display: inline-block;
+    display: block;
     margin-top: 6px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-align: center;
     font-size: 12px;
     font-weight: 700;
-    color: var(--tg-theme-link-color, var(--brand-wine));
+    color: #ffffff;
     text-decoration: none;
+  }
+  .row-btn-book {
+    background: var(--brand-wine);
+  }
+  .row-btn-whatsapp {
+    background: #25D366;
   }
   .calendar-status {
     font-size: 13px;
@@ -1555,8 +1564,8 @@
         <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff; border-color:transparent;">
           ${t('follow_this')}
         </button>
-        ${link ? `<a class="row-book-link" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
-        <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link" style="color:#25D366;">${t('share_whatsapp')}</a>
+        ${link ? `<a class="row-book-link row-btn-book" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
+        <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-whatsapp">${t('share_whatsapp')}</a>
         <div class="calendar-status" style="padding:6px 0 0; font-size:11px;">
           ${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })} ·
           <a href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue);">${t('insurance_quote_link')}</a>
