@@ -523,26 +523,6 @@
     font-size: 14px;
     color: #444444;
   }
-  #stay-modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    background: rgba(0,0,0,0.6);
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-  }
-  #stay-modal-overlay.open {
-    display: flex;
-  }
-  #stay-modal-card {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 20px;
-    max-width: 480px;
-    width: 100%;
-  }
   .channel-toggle {
     display: flex;
     gap: 8px;
@@ -602,9 +582,9 @@
     <a href="https://economybookings.tpk.lu/PYIKkDDP" target="_blank" rel="noopener" class="top-service-card">
       <span class="svc-icon">🚗</span><br><span data-i18n="svc_cars"></span>
     </a>
-    <button type="button" id="stay-badge-btn" class="top-service-card">
+    <a href="#stay-map-section" id="stay-badge-btn" class="top-service-card">
       <span class="svc-icon">🏨</span><br><span data-i18n="svc_stays"></span>
-    </button>
+    </a>
     <a href="notificaciones.html" class="top-service-card">
       <span class="svc-icon">🔔</span><br><span data-i18n="svc_notifications"></span>
     </a>
@@ -615,19 +595,16 @@
     <div id="recommended-flights-list"></div>
   </div>
 
+  <div id="stay-map-section" class="card" style="margin-bottom:20px;">
+    <div class="price-calendar-title" data-i18n="stay_modal_title" style="margin-bottom:8px;"></div>
+    <iframe id="stay22-widget" width="100%" height="428" src="https://www.stay22.com/embed/6a99c4b26c050ac995af1f27" frameborder="0"></iframe>
+  </div>
+
   <div id="qr-modal-overlay">
     <div id="qr-modal-card">
       <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" id="qr-modal-img">
       <p data-i18n-html="qr_modal_text"></p>
       <button type="button" class="calendar-btn" id="qr-modal-close" data-i18n="close"></button>
-    </div>
-  </div>
-
-  <div id="stay-modal-overlay">
-    <div id="stay-modal-card">
-      <div class="price-calendar-title" data-i18n="stay_modal_title" style="margin-bottom:8px;"></div>
-      <iframe id="stay22-widget" width="100%" height="428" src="https://www.stay22.com/embed/6a99c4b26c050ac995af1f27" frameborder="0"></iframe>
-      <button type="button" class="calendar-btn" id="stay-modal-close" data-i18n="close" style="margin-top:10px;"></button>
     </div>
   </div>
 
@@ -1101,20 +1078,6 @@
   });
   qrModalOverlay.addEventListener('click', (e) => {
     if (e.target === qrModalOverlay) qrModalOverlay.classList.remove('open');
-  });
-
-  // Modal del mapa de hospedaje (Stay22) — mismo patrón que el del QR.
-  const stayBadgeBtn = document.getElementById('stay-badge-btn');
-  const stayModalOverlay = document.getElementById('stay-modal-overlay');
-  const stayModalClose = document.getElementById('stay-modal-close');
-  stayBadgeBtn.addEventListener('click', () => {
-    stayModalOverlay.classList.add('open');
-  });
-  stayModalClose.addEventListener('click', () => {
-    stayModalOverlay.classList.remove('open');
-  });
-  stayModalOverlay.addEventListener('click', (e) => {
-    if (e.target === stayModalOverlay) stayModalOverlay.classList.remove('open');
   });
 
   // --- Servidor intermedio (Cloudflare Worker) para el calendario de precios ---
