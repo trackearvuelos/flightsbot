@@ -339,6 +339,9 @@
   .row-btn-book {
     background: var(--brand-wine);
   }
+  .row-btn-expedia {
+    background: #00355F;
+  }
   .row-btn-whatsapp {
     background: #25D366;
   }
@@ -590,24 +593,6 @@
     </a>
   </div>
 
-  <div class="card" style="margin-bottom:20px;">
-    <div id="recommended-title" class="price-calendar-title" data-i18n="recommended_title" style="margin-bottom:6px;"></div>
-    <div id="recommended-flights-list"></div>
-  </div>
-
-  <div id="stay-map-section" class="card" style="margin-bottom:20px;">
-    <div class="price-calendar-title" data-i18n="stay_modal_title" style="margin-bottom:8px;"></div>
-    <iframe id="stay22-widget" width="100%" height="428" src="https://www.stay22.com/embed/6a99c4b26c050ac995af1f27" frameborder="0"></iframe>
-  </div>
-
-  <div id="qr-modal-overlay">
-    <div id="qr-modal-card">
-      <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" id="qr-modal-img">
-      <p data-i18n-html="qr_modal_text"></p>
-      <button type="button" class="calendar-btn" id="qr-modal-close" data-i18n="close"></button>
-    </div>
-  </div>
-
   <div class="swap-row">
     <div class="field">
       <label for="origin" data-i18n="origin_label"></label>
@@ -683,6 +668,25 @@
   <button type="button" class="calendar-btn" id="search-flight-btn" style="background:var(--tg-theme-button-color,#1D4ED8); color:#fff; font-weight:700; border-color:transparent;" data-i18n="search_btn">
   </button>
   <div class="price-calendar" id="track-result-box"></div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div id="recommended-title" class="price-calendar-title" data-i18n="recommended_title" style="margin-bottom:6px;"></div>
+    <div id="recommended-flights-list"></div>
+  </div>
+
+  <div id="stay-map-section" class="card" style="margin-bottom:20px;">
+    <div class="price-calendar-title" data-i18n="stay_modal_title" style="margin-bottom:8px;"></div>
+    <iframe id="stay22-widget" width="100%" height="428" src="https://www.stay22.com/embed/6a99c4b26c050ac995af1f27" frameborder="0"></iframe>
+  </div>
+
+  <div id="qr-modal-overlay">
+    <div id="qr-modal-card">
+      <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" id="qr-modal-img">
+      <p data-i18n-html="qr_modal_text"></p>
+      <button type="button" class="calendar-btn" id="qr-modal-close" data-i18n="close"></button>
+    </div>
+  </div>
+
 
   <button type="button" class="calendar-btn" id="my-routes-btn" data-i18n="my_routes_btn">
   </button>
@@ -769,7 +773,8 @@
       saving: 'Guardando...',
       following: '✅ Siguiendo',
       follow_this: '📌 Seguir este vuelo',
-      book_this: 'Reservar',
+      book_this: '✈️ Ver en Aviasales',
+      expedia_link: '✈️ Ver en Expedia',
       choose_which: 'Elige cuál(es) seguir — {n} aerolínea(s) encontrada(s):',
       live_data_note: '💡 Estos precios vienen de nuestra fuente de datos en vivo — al reservar, confirma que la aerolínea y el precio coincidan en la página final antes de pagar.',
       consulting_airlines: 'Consultando todas las aerolíneas disponibles...',
@@ -848,7 +853,8 @@
       saving: 'Saving...',
       following: '✅ Following',
       follow_this: '📌 Follow this flight',
-      book_this: 'Book',
+      book_this: '✈️ View on Aviasales',
+      expedia_link: '✈️ View on Expedia',
       choose_which: 'Choose which one(s) to follow — {n} airline(s) found:',
       live_data_note: "💡 These prices come from our live data source — before you pay, confirm the airline and price match on the final booking page.",
       consulting_airlines: 'Checking all available airlines...',
@@ -1563,6 +1569,31 @@
     });
     const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
 
+    // Link de Expedia armado con la misma ruta/fechas — separado del de
+    // Aviasales. Como el script de Stay22 (LMA) ya está instalado en la
+    // página y convierte automáticamente links de Expedia en links
+    // monetizados suyos, no hace falta ninguna cuenta de afiliado
+    // propia con Expedia para esto.
+    function toExpediaDate(isoDate) {
+      const [y, m, d] = isoDate.split('-');
+      return `${m}/${d}/${y}`;
+    }
+    let expediaLink = null;
+    if (payload.depart_date) {
+      const params = new URLSearchParams();
+      if (payload.return_date) {
+        params.set('trip', 'roundtrip');
+        params.set('leg1', `from:${payload.origin},to:${payload.destination},departure:${toExpediaDate(payload.depart_date)}`);
+        params.set('leg2', `from:${payload.destination},to:${payload.origin},departure:${toExpediaDate(payload.return_date)}`);
+      } else {
+        params.set('trip', 'oneway');
+        params.set('leg1', `from:${payload.origin},to:${payload.destination},departure:${toExpediaDate(payload.depart_date)}`);
+      }
+      params.set('passengers', `adults:${payload.passengers}`);
+      params.set('mode', 'search');
+      expediaLink = `https://www.expedia.com/Flights-Search?${params.toString()}`;
+    }
+
     return `
       <div class="price-row">
         <div class="price-row-header">
@@ -1576,6 +1607,7 @@
           ${t('follow_this')}
         </button>
         ${link ? `<a class="row-book-link row-btn-book" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
+        ${expediaLink ? `<a class="row-book-link row-btn-expedia" href="${expediaLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('expedia_link')}</a>` : ''}
         <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-whatsapp">${t('share_whatsapp')}</a>
         <div class="calendar-status" style="padding:6px 0 0; font-size:11px;">
           ${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })} ·
