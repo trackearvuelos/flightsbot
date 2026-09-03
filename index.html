@@ -769,6 +769,7 @@
       follow_this: '📌 Seguir este vuelo',
       book_this: '✈️ Ver en Aviasales',
       expedia_link: '✈️ Ver en Expedia',
+      compare_both: '🔍 Comparar ambos precios',
       see_price_note: '💵 Precio disponible en Aviasales o Expedia',
       choose_which: 'Elige cuál(es) seguir — {n} aerolínea(s) encontrada(s):',
       live_data_note: '💡 Esta información viene de nuestra fuente de datos en vivo — confirma la aerolínea y el precio final en Aviasales o Expedia antes de pagar.',
@@ -849,6 +850,7 @@
       follow_this: '📌 Follow this flight',
       book_this: '✈️ View on Aviasales',
       expedia_link: '✈️ View on Expedia',
+      compare_both: '🔍 Compare both prices',
       see_price_note: '💵 Price available on Aviasales or Expedia',
       choose_which: 'Choose which one(s) to follow — {n} airline(s) found:',
       live_data_note: "💡 This information comes from our live data source — confirm the airline and final price on Aviasales or Expedia before you pay.",
@@ -1484,6 +1486,7 @@
         </button>
         ${link ? `<a class="row-book-link row-btn-book" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
         ${expediaLink ? `<a class="row-book-link row-btn-expedia" href="${expediaLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('expedia_link')}</a>` : ''}
+        ${(link && expediaLink) ? `<button type="button" class="calendar-btn compare-both-btn" data-link="${link}" data-expedia="${expediaLink}" style="margin-top:6px; background:var(--field-bg); color:var(--brand-blue); border:1px solid var(--dash);" onclick="event.stopPropagation()">${t('compare_both')}</button>` : ''}
         <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-whatsapp">${t('share_whatsapp')}</a>
         <div class="calendar-status" style="padding:6px 0 0; font-size:11px;">
           ${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })} ·
@@ -1576,6 +1579,16 @@
           btn.textContent = t('saving');
           const statusBox = document.getElementById('track-save-status');
           saveTrackedRoute(payload, btn.dataset.airline, statusBox, btn);
+        });
+      });
+
+      // "Comparar precios" abre las 2 pestañas (Aviasales y Expedia) al
+      // mismo tiempo, con un solo toque — más rápido que tocar cada
+      // botón por separado, y así puede compararlos ella misma.
+      trackResultBox.querySelectorAll('.compare-both-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          window.open(btn.dataset.link, '_blank', 'noopener');
+          window.open(btn.dataset.expedia, '_blank', 'noopener');
         });
       });
     } catch (err) {
