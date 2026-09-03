@@ -342,6 +342,9 @@
   .row-btn-expedia {
     background: #00355F;
   }
+  .row-btn-kayak {
+    background: #FF690E;
+  }
   .row-btn-whatsapp {
     background: #25D366;
   }
@@ -769,8 +772,9 @@
       follow_this: '📌 Seguir este vuelo',
       book_this: '✈️ Ver en Aviasales',
       expedia_link: '✈️ Ver en Expedia',
-      compare_both: '🔍 Comparar ambos precios',
-      see_price_note: '💵 Precio disponible en Aviasales o Expedia',
+      compare_both: '🔍 Comparar precios',
+      kayak_link: '✈️ Ver en KAYAK',
+      see_price_note: '💵 Precio disponible en Aviasales, Expedia o KAYAK',
       choose_which: 'Elige cuál(es) seguir — {n} aerolínea(s) encontrada(s):',
       live_data_note: '💡 Esta información viene de nuestra fuente de datos en vivo — confirma la aerolínea y el precio final en Aviasales o Expedia antes de pagar.',
       consulting_airlines: 'Consultando todas las aerolíneas disponibles...',
@@ -783,6 +787,7 @@
       insurance_estimate: '🛡️ Seguro de viaje estimado: ${low}-${high}',
       insurance_quote_link: 'Cotiza el real en EKTA →',
       hotel_note_link: '🏨 ¿Necesitas hospedaje? Cotiza aquí →',
+      activities_link: '🎟️ Ver actividades y tours en GetYourGuide →',
       share_whatsapp: '📤 Compartir por WhatsApp',
       share_message: '✈️ ¡Mira este vuelo! {origin} → {destination} con {airline} por ${price}. {link}',
       channels_label: 'Canales de notificación (marca los que quieras)',
@@ -850,8 +855,9 @@
       follow_this: '📌 Follow this flight',
       book_this: '✈️ View on Aviasales',
       expedia_link: '✈️ View on Expedia',
-      compare_both: '🔍 Compare both prices',
-      see_price_note: '💵 Price available on Aviasales or Expedia',
+      compare_both: '🔍 Compare prices',
+      kayak_link: '✈️ View on KAYAK',
+      see_price_note: '💵 Price available on Aviasales, Expedia or KAYAK',
       choose_which: 'Choose which one(s) to follow — {n} airline(s) found:',
       live_data_note: "💡 This information comes from our live data source — confirm the airline and final price on Aviasales or Expedia before you pay.",
       consulting_airlines: 'Checking all available airlines...',
@@ -864,6 +870,7 @@
       insurance_estimate: '🛡️ Estimated travel insurance: ${low}-${high}',
       insurance_quote_link: 'Get a real quote at EKTA →',
       hotel_note_link: '🏨 Need a place to stay? Get a quote →',
+      activities_link: '🎟️ See activities and tours on GetYourGuide →',
       share_whatsapp: '📤 Share on WhatsApp',
       share_message: '✈️ Check out this flight! {origin} → {destination} with {airline} for ${price}. {link}',
       channels_label: 'Notification channels (check any you want)',
@@ -1472,6 +1479,16 @@
       expediaLink = `https://www.expedia.com/Flights-Search?${params.toString()}`;
     }
 
+    // Link de KAYAK, misma lógica — Stay22 también tiene KAYAK
+    // habilitado para LinkSwap, así que este link también se
+    // monetiza automático sin necesitar cuenta de afiliado propia.
+    let kayakLink = null;
+    if (payload.depart_date) {
+      kayakLink = payload.return_date
+        ? `https://www.kayak.com/flights/${payload.origin}-${payload.destination}/${payload.depart_date}/${payload.return_date}?sort=bestflight_a`
+        : `https://www.kayak.com/flights/${payload.origin}-${payload.destination}/${payload.depart_date}?sort=bestflight_a`;
+    }
+
     return `
       <div class="price-row">
         <div class="price-row-header">
@@ -1486,7 +1503,8 @@
         </button>
         ${link ? `<a class="row-book-link row-btn-book" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
         ${expediaLink ? `<a class="row-book-link row-btn-expedia" href="${expediaLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('expedia_link')}</a>` : ''}
-        ${(link && expediaLink) ? `<button type="button" class="calendar-btn compare-both-btn" data-link="${link}" data-expedia="${expediaLink}" style="margin-top:6px; background:var(--field-bg); color:var(--brand-blue); border:1px solid var(--dash);" onclick="event.stopPropagation()">${t('compare_both')}</button>` : ''}
+        ${kayakLink ? `<a class="row-book-link row-btn-kayak" href="${kayakLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('kayak_link')}</a>` : ''}
+        ${(link && expediaLink) ? `<button type="button" class="calendar-btn compare-both-btn" data-link="${link}" data-expedia="${expediaLink}" data-kayak="${kayakLink || ''}" style="margin-top:6px; background:var(--field-bg); color:var(--brand-blue); border:1px solid var(--dash);" onclick="event.stopPropagation()">${t('compare_both')}</button>` : ''}
         <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-whatsapp">${t('share_whatsapp')}</a>
         <div class="calendar-status" style="padding:6px 0 0; font-size:11px;">
           ${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })} ·
@@ -1494,6 +1512,15 @@
         </div>
         <div class="calendar-status" style="padding:2px 0 0;">
           <a href="https://www.booking.com/searchresults.html?ss=${encodeURIComponent(payload.destination)}&checkin=${payload.depart_date}&checkout=${payload.return_date || payload.depart_date}&group_adults=${payload.passengers}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">${t('hotel_note_link')}</a>
+          ·
+          <a href="https://www.agoda.com/search?q=${encodeURIComponent(payload.destination)}&checkIn=${payload.depart_date}&checkOut=${payload.return_date || payload.depart_date}&adults=${payload.passengers}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">Agoda</a>
+          ·
+          <a href="https://www.hotels.com/search.do?destination=${encodeURIComponent(payload.destination)}&startDate=${payload.depart_date}&endDate=${payload.return_date || payload.depart_date}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">Hotels.com</a>
+          ·
+          <a href="https://www.vrbo.com/search?destination=${encodeURIComponent(payload.destination)}&startDate=${payload.depart_date}&endDate=${payload.return_date || payload.depart_date}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">Vrbo</a>
+        </div>
+        <div class="calendar-status" style="padding:2px 0 0;">
+          <a href="https://www.getyourguide.com/s/?q=${encodeURIComponent(payload.destination)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">${t('activities_link')}</a>
         </div>
       </div>`;
   }
@@ -1582,13 +1609,14 @@
         });
       });
 
-      // "Comparar precios" abre las 2 pestañas (Aviasales y Expedia) al
-      // mismo tiempo, con un solo toque — más rápido que tocar cada
-      // botón por separado, y así puede compararlos ella misma.
+      // "Comparar precios" abre las pestañas (Aviasales, Expedia, y
+      // KAYAK si está disponible) al mismo tiempo, con un solo toque —
+      // más rápido que tocar cada botón por separado.
       trackResultBox.querySelectorAll('.compare-both-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           window.open(btn.dataset.link, '_blank', 'noopener');
           window.open(btn.dataset.expedia, '_blank', 'noopener');
+          if (btn.dataset.kayak) window.open(btn.dataset.kayak, '_blank', 'noopener');
         });
       });
     } catch (err) {
