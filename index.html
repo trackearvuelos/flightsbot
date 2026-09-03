@@ -585,7 +585,7 @@
     <a href="https://economybookings.tpk.lu/PYIKkDDP" target="_blank" rel="noopener" class="top-service-card">
       <span class="svc-icon">🚗</span><br><span data-i18n="svc_cars"></span>
     </a>
-    <a href="#stay-map-section" id="stay-badge-btn" class="top-service-card">
+    <a href="https://www.booking.com/" target="_blank" rel="noopener" class="top-service-card">
       <span class="svc-icon">🏨</span><br><span data-i18n="svc_stays"></span>
     </a>
     <a href="notificaciones.html" class="top-service-card">
@@ -669,16 +669,6 @@
   </button>
   <div class="price-calendar" id="track-result-box"></div>
 
-  <div class="card" style="margin-bottom:20px;">
-    <div id="recommended-title" class="price-calendar-title" data-i18n="recommended_title" style="margin-bottom:6px;"></div>
-    <div id="recommended-flights-list"></div>
-  </div>
-
-  <div id="stay-map-section" class="card" style="margin-bottom:20px;">
-    <div class="price-calendar-title" data-i18n="stay_modal_title" style="margin-bottom:8px;"></div>
-    <iframe id="stay22-widget" width="100%" height="428" src="https://www.stay22.com/embed/6a99c4b26c050ac995af1f27" frameborder="0"></iframe>
-  </div>
-
   <div id="qr-modal-overlay">
     <div id="qr-modal-card">
       <img src="qr-code.png" alt="Código QR para abrir Trackear Vuelos" id="qr-modal-img">
@@ -732,11 +722,9 @@
       svc_notifications: 'Notificaciones',
       map_title: '🗺️ Explora el mundo',
       map_disclaimer: 'Precios aproximados. Actualizamos una vez al día.',
-      recommended_title: '🔥 Recomendados de hoy',
       install_app_link: 'Instala la app',
       qr_modal_text: '<strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio el app, y guarda tus rutas para empezar a recibir alertas.',
       close: 'Cerrar',
-      stay_modal_title: '🏨 Encuentra dónde quedarte',
       origin_label: 'Origen',
       origin_ph: 'Ej: San Juan',
       destination_label: 'Destino',
@@ -775,8 +763,9 @@
       follow_this: '📌 Seguir este vuelo',
       book_this: '✈️ Ver en Aviasales',
       expedia_link: '✈️ Ver en Expedia',
+      see_price_note: '💵 Precio disponible en Aviasales o Expedia',
       choose_which: 'Elige cuál(es) seguir — {n} aerolínea(s) encontrada(s):',
-      live_data_note: '💡 Estos precios vienen de nuestra fuente de datos en vivo — al reservar, confirma que la aerolínea y el precio coincidan en la página final antes de pagar.',
+      live_data_note: '💡 Esta información viene de nuestra fuente de datos en vivo — confirma la aerolínea y el precio final en Aviasales o Expedia antes de pagar.',
       consulting_airlines: 'Consultando todas las aerolíneas disponibles...',
       route_saved_title: '✅ Ruta guardada (ID {id}): {origin} → {destination}',
       total_label: 'Total',
@@ -812,11 +801,9 @@
       svc_notifications: 'Notifications',
       map_title: '🗺️ Explore the world',
       map_disclaimer: 'Approximate prices. Updated once a day.',
-      recommended_title: '🔥 Today\'s picks',
       install_app_link: 'Install the app',
       qr_modal_text: '<strong>📱 Take Trackear Vuelos with you</strong><br>Scan, add it to your home screen, and save your routes to start getting alerts.',
       close: 'Close',
-      stay_modal_title: '🏨 Find a place to stay',
       origin_label: 'From',
       origin_ph: 'E.g.: San Juan',
       destination_label: 'To',
@@ -855,8 +842,9 @@
       follow_this: '📌 Follow this flight',
       book_this: '✈️ View on Aviasales',
       expedia_link: '✈️ View on Expedia',
+      see_price_note: '💵 Price available on Aviasales or Expedia',
       choose_which: 'Choose which one(s) to follow — {n} airline(s) found:',
-      live_data_note: "💡 These prices come from our live data source — before you pay, confirm the airline and price match on the final booking page.",
+      live_data_note: "💡 This information comes from our live data source — confirm the airline and final price on Aviasales or Expedia before you pay.",
       consulting_airlines: 'Checking all available airlines...',
       route_saved_title: '✅ Route saved (ID {id}): {origin} → {destination}',
       total_label: 'Total',
@@ -913,7 +901,6 @@
     currentLang = currentLang === 'es' ? 'en' : 'es';
     localStorage.setItem('flightbot_lang', currentLang);
     applyTranslations();
-    if (typeof loadRecommendedFlights === 'function') loadRecommendedFlights(); // refresca nombres de ciudades en el idioma nuevo
     // Si ya está verificado, avisamos al Worker del cambio para que los
     // correos/push automáticos futuros también respeten el idioma nuevo.
     const session = getValidSessionToken ? getValidSessionToken() : null;
@@ -938,28 +925,6 @@
 
   applyTranslations();
 
-  // El buscador del mapa (columna derecha) es más alto que el título
-  // "Recomendados de hoy" (columna izquierda) — sin este ajuste, el
-  // contenido de abajo (la lista vs. el mapa) queda desalineado, aunque
-  // ambos títulos empiecen a la misma altura.
-  function alignRecommendedListToMap() {
-    const title = document.getElementById('recommended-title');
-    const recommendedCol = document.getElementById('recommended-flights-col');
-    const mapWrap = document.getElementById('world-map-wrap');
-    const mapCol = document.getElementById('world-map-col');
-    if (!title || !recommendedCol || !mapWrap || !mapCol) return;
-
-    // Le damos el espacio al margen INFERIOR del título (no al superior
-    // de la lista) — así evitamos el problema de que los márgenes entre
-    // hermanos "se combinen" en vez de sumarse.
-    title.style.marginBottom = '0px';
-    const titleOffset = title.getBoundingClientRect().bottom - recommendedCol.getBoundingClientRect().top;
-    const mapOffset = mapWrap.getBoundingClientRect().top - mapCol.getBoundingClientRect().top;
-    const diff = mapOffset - titleOffset;
-    if (diff > 0) title.style.marginBottom = `${diff}px`;
-  }
-  alignRecommendedListToMap();
-
   window.addEventListener('load', () => {
     // Registramos el Service Worker (necesario para poder recibir
     // notificaciones push reales, incluso con la app cerrada — la
@@ -973,102 +938,6 @@
 
   // El QR pequeño de la esquina es solo una insignia — al tocarlo, se
   // abre agrandado en un modal para que sí se pueda escanear de verdad.
-  // ============================================================
-  // Mapa mundial de precios aproximados (actualizados 1 vez al día).
-  // Usamos un mapa SVG real (con contornos de países reales, licencia
-  // CC BY-SA 3.0 — ver crédito abajo del mapa), y cada ciudad tiene su
-  // posición (x,y) real dentro de ese mismo mapa, calculada una sola
-  // vez a partir de la forma real de cada país (no son coordenadas
-  // inventadas ni una proyección aproximada).
-  // ============================================================
-  const CITY_INFO = {
-    SJU: { x: 247.2, y: 482.6, es: 'San Juan', en: 'San Juan', country_es: 'Puerto Rico', country_en: 'Puerto Rico' },
-    MAD: { x: 389, y: 440, es: 'Madrid', en: 'Madrid', country_es: 'España', country_en: 'Spain' },
-    BCN: { x: 405, y: 427, es: 'Barcelona', en: 'Barcelona', country_es: 'España', country_en: 'Spain' },
-    LHR: { x: 400.6, y: 382, es: 'Londres', en: 'London', country_es: 'Reino Unido', country_en: 'United Kingdom' },
-    CDG: { x: 411, y: 406, es: 'París', en: 'Paris', country_es: 'Francia', country_en: 'France' },
-    FCO: { x: 435.3, y: 420.7, es: 'Roma', en: 'Rome', country_es: 'Italia', country_en: 'Italy' },
-    AMS: { x: 418.3, y: 388.8, es: 'Ámsterdam', en: 'Amsterdam', country_es: 'Países Bajos', country_en: 'Netherlands' },
-    LIS: { x: 363.7, y: 433.8, es: 'Lisboa', en: 'Lisbon', country_es: 'Portugal', country_en: 'Portugal' },
-    MEX: { x: 166, y: 470, es: 'Ciudad de México', en: 'Mexico City', country_es: 'México', country_en: 'Mexico' },
-    BOG: { x: 228, y: 520.7, es: 'Bogotá', en: 'Bogota', country_es: 'Colombia', country_en: 'Colombia' },
-    LIM: { x: 224.3, y: 558, es: 'Lima', en: 'Lima', country_es: 'Perú', country_en: 'Peru' },
-    SCL: { x: 251.2, y: 637, es: 'Santiago', en: 'Santiago', country_es: 'Chile', country_en: 'Chile' },
-    EZE: { x: 261.6, y: 642, es: 'Buenos Aires', en: 'Buenos Aires', country_es: 'Argentina', country_en: 'Argentina' },
-    PTY: { x: 212.2, y: 508.7, es: 'Ciudad de Panamá', en: 'Panama City', country_es: 'Panamá', country_en: 'Panama' },
-    CUN: { x: 195, y: 445, es: 'Cancún', en: 'Cancun', country_es: 'México', country_en: 'Mexico' },
-    MIA: { x: 240, y: 449, es: 'Miami', en: 'Miami', country_es: 'Estados Unidos', country_en: 'United States' },
-    JFK: { x: 233, y: 398, es: 'Nueva York', en: 'New York', country_es: 'Estados Unidos', country_en: 'United States' },
-    LAX: { x: 146, y: 428, es: 'Los Ángeles', en: 'Los Angeles', country_es: 'Estados Unidos', country_en: 'United States' },
-    NRT: { x: 723.1, y: 403.7, es: 'Tokio', en: 'Tokyo', country_es: 'Japón', country_en: 'Japan' },
-    DXB: { x: 534.4, y: 467.2, es: 'Dubái', en: 'Dubai', country_es: 'Emiratos Árabes Unidos', country_en: 'United Arab Emirates' },
-    SYD: { x: 718.5, y: 623.6, es: 'Sídney', en: 'Sydney', country_es: 'Australia', country_en: 'Australia' },
-  };
-
-  let worldMapLoaded = false;
-
-  // Los "5 recomendados de hoy" son simplemente los 5 destinos más
-  // baratos del mismo grupo de precios que ya calculamos para el mapa
-  // — sin hacer ninguna consulta extra.
-  function formatShortDate(isoDate) {
-    if (!isoDate) return '';
-    const [year, month, day] = isoDate.split('-');
-    return `${month}/${day}`;
-  }
-
-  function renderRecommendedFlights(prices) {
-    const list = document.getElementById('recommended-flights-list');
-    const top5 = [...prices].sort((a, b) => a.price - b.price).slice(0, 5);
-    list.innerHTML = top5.map((row) => {
-      const info = CITY_INFO[row.destination];
-      const cityName = info ? (currentLang === 'en' ? info.en : info.es) : row.destination;
-      const dateLabel = row.depart_date
-        ? `${formatShortDate(row.depart_date)}${row.return_date ? '–' + formatShortDate(row.return_date) : ''}`
-        : '';
-      return `
-        <div class="calendar-status recommended-row" data-city="${row.destination}" data-depart="${row.depart_date || ''}" data-return="${row.return_date || ''}" style="padding:6px 4px; display:flex; flex-direction:column; cursor:pointer; border-radius:6px;">
-          <div style="display:flex; justify-content:space-between; font-size:11px;">
-            <span>${cityName}</span>
-            <strong style="color:var(--brand-wine);">$${Math.round(row.price)}</strong>
-          </div>
-          ${dateLabel ? `<span style="font-size:9px; color:var(--ink-faint);">${dateLabel}</span>` : ''}
-        </div>`;
-    }).join('');
-
-    // Tocar una recomendación llena el destino y baja al buscador,
-    // igual que hacía el mapa antes.
-    list.querySelectorAll('.recommended-row').forEach((row) => {
-      row.addEventListener('click', () => {
-        const destinationInput = document.getElementById('destination');
-        destinationInput.value = row.dataset.city;
-        destinationInput.dataset.code = row.dataset.city;
-        if (row.dataset.depart) {
-          document.getElementById('depart-date').value = row.dataset.depart;
-        }
-        if (row.dataset.return) {
-          document.getElementById('one-way').checked = false;
-          document.getElementById('return-date').value = row.dataset.return;
-        }
-        destinationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
-    });
-  }
-
-  // Cargamos los "Recomendados de hoy" (los 5 más baratos de los
-  // destinos que ya calculamos a diario) — con reintento automático
-  // si el primer intento falla (ver por qué en conversaciones
-  // anteriores: a veces el Worker tarda un momento en "despertar").
-  async function loadRecommendedFlights(isRetry) {
-    try {
-      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=get_map_prices`);
-      const data = await resp.json();
-      if (!data.success) throw new Error('respuesta sin éxito');
-      renderRecommendedFlights(data.prices);
-    } catch {
-      if (!isRetry) setTimeout(() => loadRecommendedFlights(true), 1500);
-    }
-  }
-  loadRecommendedFlights();
 
 
   const installAppLink = document.getElementById('install-app-link');
@@ -1598,11 +1467,11 @@
       <div class="price-row">
         <div class="price-row-header">
           <span>✈️ ${offer.airline} (${paxLabel})</span>
-          <span class="price-tag">$${offer.price.toFixed(0)}${perPersonNote}</span>
         </div>
         ${renderLegDetails(offer.outbound)}
         ${renderLegDetails(offer.inbound)}
         ${offer.cabin_class ? `<div class="calendar-status" style="padding:0 0 2px;">💺 ${offer.cabin_class}</div>` : ''}
+        <div class="calendar-status" style="padding:0 0 6px; font-size:11px; font-style:italic;">${t('see_price_note')}</div>
         <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff; border-color:transparent;">
           ${t('follow_this')}
         </button>
