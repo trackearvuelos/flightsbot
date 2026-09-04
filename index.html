@@ -348,6 +348,13 @@
   .row-btn-whatsapp {
     background: #25D366;
   }
+  .row-btn-insurance {
+    background: var(--field-bg);
+    color: var(--brand-blue) !important;
+    border: 1px solid var(--dash);
+    font-size: 11px !important;
+    font-weight: 600 !important;
+  }
   .calendar-status {
     font-size: 13px;
     color: var(--tg-theme-hint-color, var(--ink-soft));
@@ -770,24 +777,21 @@
       saving: 'Guardando...',
       following: '✅ Siguiendo',
       follow_this: '📌 Seguir este vuelo',
+      choose_providers: '¿Dónde quieres ver el precio en los avisos de esta ruta?',
+      confirm: 'Confirmar',
       book_this: '✈️ Ver en Aviasales',
       expedia_link: '✈️ Ver en Expedia',
       compare_both: '🔍 Comparar precios',
       kayak_link: '✈️ Ver en KAYAK',
       see_price_note: '💵 Precio disponible en Aviasales, Expedia o KAYAK',
       choose_which: 'Elige cuál(es) seguir — {n} aerolínea(s) encontrada(s):',
-      live_data_note: '💡 Esta información viene de nuestra fuente de datos en vivo — confirma la aerolínea y el precio final en Aviasales o Expedia antes de pagar.',
+      live_data_note: '💡 Esta información viene de nuestra fuente de datos en vivo — confirma la aerolínea y el precio final en Aviasales, Expedia o KAYAK antes de pagar.',
       consulting_airlines: 'Consultando todas las aerolíneas disponibles...',
       route_saved_title: '✅ Ruta guardada (ID {id}): {origin} → {destination}',
-      total_label: 'Total',
-      per_person: 'por persona',
       no_live_price: 'Guardada. No encontramos precio en vivo ahora mismo, lo seguiremos intentando.',
       notif_sent: '📨 Confirmación enviada por correo.',
       notif_error: '⚠️ No se pudo mandar la notificación: {err}',
-      insurance_estimate: '🛡️ Seguro de viaje estimado: ${low}-${high}',
-      insurance_quote_link: 'Cotiza el real en EKTA →',
-      hotel_note_link: '🏨 ¿Necesitas hospedaje? Cotiza aquí →',
-      activities_link: '🎟️ Ver actividades y tours en GetYourGuide →',
+      insurance_estimate: '🛡️ Seguro de viaje estimado: ${low}-${high} · Cotiza el real en EKTA →',
       share_whatsapp: '📤 Compartir por WhatsApp',
       share_message: '✈️ ¡Mira este vuelo! {origin} → {destination} con {airline} por ${price}. {link}',
       channels_label: 'Canales de notificación (marca los que quieras)',
@@ -853,24 +857,21 @@
       saving: 'Saving...',
       following: '✅ Following',
       follow_this: '📌 Follow this flight',
+      choose_providers: "Where do you want to see the price in this route's alerts?",
+      confirm: 'Confirm',
       book_this: '✈️ View on Aviasales',
       expedia_link: '✈️ View on Expedia',
       compare_both: '🔍 Compare prices',
       kayak_link: '✈️ View on KAYAK',
       see_price_note: '💵 Price available on Aviasales, Expedia or KAYAK',
       choose_which: 'Choose which one(s) to follow — {n} airline(s) found:',
-      live_data_note: "💡 This information comes from our live data source — confirm the airline and final price on Aviasales or Expedia before you pay.",
+      live_data_note: "💡 This information comes from our live data source — confirm the airline and final price on Aviasales, Expedia or KAYAK before you pay.",
       consulting_airlines: 'Checking all available airlines...',
       route_saved_title: '✅ Route saved (ID {id}): {origin} → {destination}',
-      total_label: 'Total',
-      per_person: 'per person',
       no_live_price: "Saved. We couldn't find a live price right now, we'll keep trying.",
       notif_sent: '📨 Confirmation sent by email.',
       notif_error: "⚠️ Couldn't send the notification: {err}",
-      insurance_estimate: '🛡️ Estimated travel insurance: ${low}-${high}',
-      insurance_quote_link: 'Get a real quote at EKTA →',
-      hotel_note_link: '🏨 Need a place to stay? Get a quote →',
-      activities_link: '🎟️ See activities and tours on GetYourGuide →',
+      insurance_estimate: '🛡️ Estimated travel insurance: ${low}-${high} · Get a real quote at EKTA →',
       share_whatsapp: '📤 Share on WhatsApp',
       share_message: '✈️ Check out this flight! {origin} → {destination} with {airline} for ${price}. {link}',
       channels_label: 'Notification channels (check any you want)',
@@ -1042,6 +1043,61 @@
     } catch (e) {
       return null;
     }
+  }
+
+  function buildExpediaLink(origin, destination, departDate, returnDate, passengers) {
+    try {
+      const toExpediaDate = (isoDate) => {
+        const [y, m, d] = isoDate.split('-');
+        return `${m}/${d}/${y}`;
+      };
+      const params = new URLSearchParams();
+      if (returnDate) {
+        params.set('trip', 'roundtrip');
+        params.set('leg1', `from:${origin},to:${destination},departure:${toExpediaDate(departDate)}`);
+        params.set('leg2', `from:${destination},to:${origin},departure:${toExpediaDate(returnDate)}`);
+      } else {
+        params.set('trip', 'oneway');
+        params.set('leg1', `from:${origin},to:${destination},departure:${toExpediaDate(departDate)}`);
+      }
+      params.set('passengers', `adults:${passengers && passengers > 0 ? passengers : 1}`);
+      params.set('mode', 'search');
+      return `https://www.expedia.com/Flights-Search?${params.toString()}`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function buildKayakLink(origin, destination, departDate, returnDate) {
+    try {
+      return returnDate
+        ? `https://www.kayak.com/flights/${origin}-${destination}/${departDate}/${returnDate}?sort=bestflight_a`
+        : `https://www.kayak.com/flights/${origin}-${destination}/${departDate}?sort=bestflight_a`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Arma la lista de links de reserva según cuáles proveedores haya
+  // elegido la persona para esta ruta específica (guardado en
+  // provider_preference, ej. "aviasales,kayak") — si no hay preferencia
+  // guardada (rutas viejas de antes de este cambio), mostramos los 3.
+  function buildProviderLinks(origin, destination, departDate, returnDate, passengers, providerPreference) {
+    const selected = (providerPreference || 'aviasales,expedia,kayak').split(',').map((p) => p.trim());
+    const links = [];
+    if (selected.includes('aviasales')) {
+      const url = buildAffiliateLink(origin, destination, departDate, returnDate, passengers);
+      if (url) links.push({ name: 'Aviasales', url, cssClass: 'row-btn-book' });
+    }
+    if (selected.includes('expedia')) {
+      const url = buildExpediaLink(origin, destination, departDate, returnDate, passengers);
+      if (url) links.push({ name: 'Expedia', url, cssClass: 'row-btn-expedia' });
+    }
+    if (selected.includes('kayak')) {
+      const url = buildKayakLink(origin, destination, departDate, returnDate);
+      if (url) links.push({ name: 'KAYAK', url, cssClass: 'row-btn-kayak' });
+    }
+    return links;
   }
 
   // --- Base de datos local de aeropuertos (misma lista que airports.py del bot) ---
@@ -1454,40 +1510,15 @@
     });
     const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
 
-    // Link de Expedia armado con la misma ruta/fechas — separado del de
-    // Aviasales. Como el script de Stay22 (LMA) ya está instalado en la
-    // página y convierte automáticamente links de Expedia en links
-    // monetizados suyos, no hace falta ninguna cuenta de afiliado
-    // propia con Expedia para esto.
-    function toExpediaDate(isoDate) {
-      const [y, m, d] = isoDate.split('-');
-      return `${m}/${d}/${y}`;
-    }
-    let expediaLink = null;
-    if (payload.depart_date) {
-      const params = new URLSearchParams();
-      if (payload.return_date) {
-        params.set('trip', 'roundtrip');
-        params.set('leg1', `from:${payload.origin},to:${payload.destination},departure:${toExpediaDate(payload.depart_date)}`);
-        params.set('leg2', `from:${payload.destination},to:${payload.origin},departure:${toExpediaDate(payload.return_date)}`);
-      } else {
-        params.set('trip', 'oneway');
-        params.set('leg1', `from:${payload.origin},to:${payload.destination},departure:${toExpediaDate(payload.depart_date)}`);
-      }
-      params.set('passengers', `adults:${payload.passengers}`);
-      params.set('mode', 'search');
-      expediaLink = `https://www.expedia.com/Flights-Search?${params.toString()}`;
-    }
-
-    // Link de KAYAK, misma lógica — Stay22 también tiene KAYAK
-    // habilitado para LinkSwap, así que este link también se
-    // monetiza automático sin necesitar cuenta de afiliado propia.
-    let kayakLink = null;
-    if (payload.depart_date) {
-      kayakLink = payload.return_date
-        ? `https://www.kayak.com/flights/${payload.origin}-${payload.destination}/${payload.depart_date}/${payload.return_date}?sort=bestflight_a`
-        : `https://www.kayak.com/flights/${payload.origin}-${payload.destination}/${payload.depart_date}?sort=bestflight_a`;
-    }
+    // Links de Expedia y KAYAK (como el script de Stay22 ya convierte
+    // automáticamente sus links en links monetizados, no hace falta
+    // cuenta de afiliado propia con ninguno de los dos).
+    const expediaLink = payload.depart_date
+      ? buildExpediaLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers)
+      : null;
+    const kayakLink = payload.depart_date
+      ? buildKayakLink(payload.origin, payload.destination, payload.depart_date, payload.return_date)
+      : null;
 
     return `
       <div class="price-row">
@@ -1501,53 +1532,42 @@
         <button type="button" class="calendar-btn track-this-btn" data-airline="${offer.airline}" style="margin:6px 0 0; background:var(--brand-blue); color:#fff; border-color:transparent;">
           ${t('follow_this')}
         </button>
+        <div class="provider-choice-box" style="display:none; margin-top:8px;">
+          <div class="calendar-status" style="padding:0 0 4px; font-size:11px;">${t('choose_providers')}</div>
+          <div class="checkbox-row"><input type="checkbox" class="provider-check" value="aviasales" checked><label>Aviasales</label></div>
+          <div class="checkbox-row"><input type="checkbox" class="provider-check" value="expedia" checked><label>Expedia</label></div>
+          <div class="checkbox-row"><input type="checkbox" class="provider-check" value="kayak" checked><label>KAYAK</label></div>
+          <button type="button" class="calendar-btn confirm-providers-btn" style="margin-top:6px; background:var(--brand-blue); color:#fff; border-color:transparent;">${t('confirm')}</button>
+        </div>
         ${link ? `<a class="row-book-link row-btn-book" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
         ${expediaLink ? `<a class="row-book-link row-btn-expedia" href="${expediaLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('expedia_link')}</a>` : ''}
         ${kayakLink ? `<a class="row-book-link row-btn-kayak" href="${kayakLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('kayak_link')}</a>` : ''}
         ${(link && expediaLink) ? `<button type="button" class="calendar-btn compare-both-btn" data-link="${link}" data-expedia="${expediaLink}" data-kayak="${kayakLink || ''}" style="margin-top:6px; background:var(--field-bg); color:var(--brand-blue); border:1px solid var(--dash);" onclick="event.stopPropagation()">${t('compare_both')}</button>` : ''}
         <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-whatsapp">${t('share_whatsapp')}</a>
-        <div class="calendar-status" style="padding:6px 0 0; font-size:11px;">
-          ${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })} ·
-          <a href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue);">${t('insurance_quote_link')}</a>
-        </div>
-        <div class="calendar-status" style="padding:2px 0 0;">
-          <a href="https://www.booking.com/searchresults.html?ss=${encodeURIComponent(payload.destination)}&checkin=${payload.depart_date}&checkout=${payload.return_date || payload.depart_date}&group_adults=${payload.passengers}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">${t('hotel_note_link')}</a>
-          ·
-          <a href="https://www.agoda.com/search?q=${encodeURIComponent(payload.destination)}&checkIn=${payload.depart_date}&checkOut=${payload.return_date || payload.depart_date}&adults=${payload.passengers}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">Agoda</a>
-          ·
-          <a href="https://www.hotels.com/search.do?destination=${encodeURIComponent(payload.destination)}&startDate=${payload.depart_date}&endDate=${payload.return_date || payload.depart_date}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">Hotels.com</a>
-          ·
-          <a href="https://www.vrbo.com/search?destination=${encodeURIComponent(payload.destination)}&startDate=${payload.depart_date}&endDate=${payload.return_date || payload.depart_date}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">Vrbo</a>
-        </div>
-        <div class="calendar-status" style="padding:2px 0 0;">
-          <a href="https://www.getyourguide.com/s/?q=${encodeURIComponent(payload.destination)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--brand-blue); font-size:11px;">${t('activities_link')}</a>
-        </div>
+        <a href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-insurance">${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })}</a>
       </div>`;
   }
 
-  async function saveTrackedRoute(payload, preferredAirline, statusBox, btn) {
+  async function saveTrackedRoute(payload, preferredAirline, statusBox, btn, providers) {
     statusBox.innerHTML = `<div class="calendar-status">${t('saving')}</div>`;
     try {
       const resp = await fetch(`${CALENDAR_PROXY_URL}?action=track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, preferred_airline: preferredAirline }),
+        body: JSON.stringify({ ...payload, preferred_airline: preferredAirline, provider_preference: (providers && providers.length ? providers.join(',') : 'aviasales,expedia,kayak') }),
       });
       const data = await resp.json();
       if (!data.success) {
         statusBox.innerHTML = `<div class="calendar-status">⚠️ ${data.error || 'Error'}</div>`;
-        if (btn) { btn.disabled = false; btn.textContent = t('follow_this'); }
+        if (btn) { btn.disabled = false; btn.textContent = t('confirm'); }
         return;
       }
 
       const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
       const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">${t('search_btn').includes('Find') ? 'Book' : 'Reservar'}</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ${currentLang === 'en' ? 'Traveling? Get a quote here' : '¿Aseguras tu viaje? Cotiza aquí'}</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? 'Flight delayed/canceled? Claim here' : '¿Vuelo retrasado/cancelado? Reclama aquí'}</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? '(or here too)' : '(o también aquí)'}</a>` : '';
       const paxLabel = paxLabelClient(payload.passengers);
-      const perPersonNote = data.offer && payload.passengers > 1 && data.offer.price_per_person
-        ? `<div class="calendar-status" style="padding:0;">($${data.offer.price_per_person.toFixed(0)} ${t('per_person')} × ${payload.passengers})</div>`
-        : '';
       const offerHtml = data.offer
-        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span><span class="price-tag">${t('total_label')}: $${data.offer.price.toFixed(0)}</span></div>${perPersonNote}</div>${linkHtml}`
+        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span></div><div class="calendar-status" style="padding:0; font-size:11px; font-style:italic;">${t('see_price_note')}</div></div>${linkHtml}`
         : `<div class="calendar-status">${t('no_live_price')}</div>`;
 
       const notifHtml = data.notification_sent
@@ -1602,10 +1622,25 @@
 
       trackResultBox.querySelectorAll('.track-this-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          btn.disabled = true;
-          btn.textContent = t('saving');
+          // En vez de guardar directo, mostramos las casillas para que
+          // elija qué proveedor(es) quiere ver en los avisos futuros de
+          // esta ruta (Aviasales, Expedia, KAYAK, o los que quiera).
+          btn.style.display = 'none';
+          const choiceBox = btn.parentElement.querySelector('.provider-choice-box');
+          choiceBox.style.display = 'block';
+        });
+      });
+
+      trackResultBox.querySelectorAll('.confirm-providers-btn').forEach((confirmBtn) => {
+        confirmBtn.addEventListener('click', () => {
+          const choiceBox = confirmBtn.closest('.provider-choice-box');
+          const row = choiceBox.closest('.price-row');
+          const trackBtn = row.querySelector('.track-this-btn');
+          const selected = [...choiceBox.querySelectorAll('.provider-check:checked')].map((cb) => cb.value);
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = t('saving');
           const statusBox = document.getElementById('track-save-status');
-          saveTrackedRoute(payload, btn.dataset.airline, statusBox, btn);
+          saveTrackedRoute(payload, trackBtn.dataset.airline, statusBox, confirmBtn, selected);
         });
       });
 
@@ -1630,37 +1665,6 @@
   // --- "Mis rutas guardadas" ---
   const myRoutesBtn = document.getElementById('my-routes-btn');
   const myRoutesBox = document.getElementById('my-routes-box');
-  // Gráfica simple (SVG) del historial de precio de una ruta — para que
-  // se vea de un vistazo si ha subido, bajado, o se ha mantenido plano.
-  function renderPriceSparkline(history) {
-    if (!history || history.length < 2) return ''; // no hay suficientes puntos para una línea
-
-    const prices = history.map((h) => h.price);
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const range = max - min || 1; // evita dividir entre 0 si todos son iguales
-    const width = 280;
-    const height = 50;
-    const padding = 4;
-
-    const points = history.map((h, i) => {
-      const x = (i / (history.length - 1)) * (width - padding * 2) + padding;
-      const y = height - padding - ((h.price - min) / range) * (height - padding * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    });
-
-    // Verde si el último precio es igual o menor al primero, rojo si subió.
-    const trendColor = prices[prices.length - 1] <= prices[0] ? '#2F7D5C' : '#8C2F39';
-
-    return `
-      <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:44px; margin-top:4px;" preserveAspectRatio="none">
-        <polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-      </svg>
-      <div class="calendar-status" style="padding:0; font-size:10px; display:flex; justify-content:space-between;">
-        <span>$${min.toFixed(0)}</span>
-        <span>$${max.toFixed(0)}</span>
-      </div>`;
-  }
 
   myRoutesBtn.addEventListener('click', async () => {
     clearError();
@@ -1695,24 +1699,20 @@
         const tripLabel = r.return_date ? `${r.depart_date} → ${r.return_date}` : `${r.depart_date} (solo ida)`;
         const paxLabel = r.passengers === 1 ? '1 pasajero' : `${r.passengers} pasajeros`;
         const airlineLabel = r.preferred_airline ? ` · ${r.preferred_airline}` : '';
-        let priceLabel = 'Sin precio aún';
-        if (r.current_price) {
-          const checkedDate = r.last_checked_at ? new Date(r.last_checked_at).toLocaleDateString('es') : '';
-          priceLabel = `Precio actual (${checkedDate}): $${Math.round(r.current_price)}`;
-          if (r.lowest_price && Math.round(r.lowest_price) !== Math.round(r.current_price)) {
-            priceLabel += ` · Mínimo visto: $${Math.round(r.lowest_price)}`;
-          }
+        let checkedLabel = 'Todavía no hemos consultado esta ruta';
+        if (r.last_checked_at) {
+          const checkedDate = new Date(r.last_checked_at).toLocaleDateString('es');
+          checkedLabel = `Última consulta: ${checkedDate} · precio disponible en Aviasales, Expedia o KAYAK`;
         }
-        const routeLink = buildAffiliateLink(r.origin, r.destination, r.depart_date, r.return_date, r.passengers);
-        const sparkline = renderPriceSparkline(r.price_history);
+        const providerLinks = buildProviderLinks(r.origin, r.destination, r.depart_date, r.return_date, r.passengers, r.provider_preference);
+        const providerLinksHtml = providerLinks.map((p) => `<a class="row-book-link ${p.cssClass}" href="${p.url}" target="_blank" rel="noopener">✈️ Ver en ${p.name}</a>`).join('');
         html += `
           <div class="price-row">
             <div class="price-row-header">
               <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel}${airlineLabel})</span>
             </div>
-            <div class="calendar-status" style="padding:0;">${priceLabel}</div>
-            ${sparkline}
-            ${routeLink ? `<a class="book-link" href="${routeLink}" target="_blank" rel="noopener">Reservar →</a>` : ''}
+            <div class="calendar-status" style="padding:0; font-size:11px;">${checkedLabel}</div>
+            ${providerLinksHtml}
             <button type="button" class="channel-option" data-remove-id="${r.id}" style="margin-top:6px; width:100%;">🗑️ Eliminar</button>
           </div>`;
       }
