@@ -103,12 +103,16 @@
     padding: 16px;
     margin-bottom: 16px;
   }
+  #routes-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
   .price-row {
     background: var(--field-bg);
     border: 1px solid var(--dash);
     border-radius: 12px;
     padding: 12px;
-    margin-bottom: 10px;
   }
   .price-row-header {
     font-size: 13px;
