@@ -51,7 +51,14 @@
     padding: 16px;
     max-width: 600px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
+    /* Pista de aeropuerto de fondo, centrada, que se repite verticalmente
+       sin importar qué tan larga sea la página — puro CSS, sin JS. */
+    background-image:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22100%22%20viewBox%3D%220%200%20600%20100%22%3E%20%3Crect%20x%3D%22220%22%20y%3D%220%22%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%2316223A%22%20opacity%3D%220.05%22%2F%3E%20%3Cline%20x1%3D%22220%22%20y1%3D%220%22%20x2%3D%22220%22%20y2%3D%22100%22%20stroke%3D%22%2316223A%22%20stroke-width%3D%222%22%20opacity%3D%220.07%22%2F%3E%20%3Cline%20x1%3D%22380%22%20y1%3D%220%22%20x2%3D%22380%22%20y2%3D%22100%22%20stroke%3D%22%2316223A%22%20stroke-width%3D%222%22%20opacity%3D%220.07%22%2F%3E%20%3Cline%20x1%3D%22300%22%20y1%3D%220%22%20x2%3D%22300%22%20y2%3D%2240%22%20stroke%3D%22%2316223A%22%20stroke-width%3D%226%22%20opacity%3D%220.09%22%2F%3E%20%3C%2Fsvg%3E"),
+      linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
+    background-repeat: repeat-y, no-repeat;
+    background-size: 100% 100px, 100% 100%;
+    background-position: center top, center top;
     color: var(--tg-theme-text-color, var(--ink));
     position: relative;
   }
@@ -601,6 +608,9 @@
     <a href="notificaciones.html" class="top-service-card">
       <span class="svc-icon">🔔</span><br><span data-i18n="svc_notifications"></span>
     </a>
+    <button type="button" id="my-routes-btn" class="top-service-card">
+      <span class="svc-icon">📋</span><br><span data-i18n="svc_my_routes"></span>
+    </button>
   </div>
 
   <div class="swap-row">
@@ -693,8 +703,6 @@
   </div>
 
 
-  <button type="button" class="calendar-btn" id="my-routes-btn" data-i18n="my_routes_btn">
-  </button>
   <div class="price-calendar" id="my-routes-box"></div>
 
   <div class="error" id="error-msg"></div>
@@ -736,6 +744,7 @@
       svc_stays: 'Hospedajes',
       stay_modal_title: '🏨 Encuentra dónde quedarte',
       svc_notifications: 'Notificaciones',
+      svc_my_routes: 'Mis rutas',
       map_title: '🗺️ Explora el mundo',
       map_disclaimer: 'Precios aproximados. Actualizamos una vez al día.',
       install_app_link: 'Instala la app',
@@ -759,7 +768,6 @@
       confirm_code: '✅ Confirmar código',
       enable_push: '🔔 Activar notificaciones push',
       search_btn: '🔍 Buscar',
-      my_routes_btn: '📋 Ver mis rutas guardadas',
       footer_about: 'Acerca de nosotros',
       footer_terms: 'Términos y condiciones',
       footer_contact: 'Contacto',
@@ -781,7 +789,6 @@
       confirm: 'Confirmar',
       book_this: '✈️ Ver en Aviasales',
       expedia_link: '✈️ Ver en Expedia',
-      compare_both: '🔍 Comparar precios',
       kayak_link: '✈️ Ver en KAYAK',
       see_price_note: '💵 Precio disponible en Aviasales, Expedia o KAYAK',
       see_price_note_generic: '💵 Precio disponible en el link de abajo',
@@ -817,6 +824,7 @@
       svc_stays: 'Stays',
       stay_modal_title: '🏨 Find a place to stay',
       svc_notifications: 'Notifications',
+      svc_my_routes: 'My routes',
       map_title: '🗺️ Explore the world',
       map_disclaimer: 'Approximate prices. Updated once a day.',
       install_app_link: 'Install the app',
@@ -840,7 +848,6 @@
       confirm_code: '✅ Confirm code',
       enable_push: '🔔 Enable push notifications',
       search_btn: '🔍 Search',
-      my_routes_btn: '📋 View my saved routes',
       footer_about: 'About us',
       footer_terms: 'Terms and Conditions',
       footer_contact: 'Contact',
@@ -862,7 +869,6 @@
       confirm: 'Confirm',
       book_this: '✈️ View on Aviasales',
       expedia_link: '✈️ View on Expedia',
-      compare_both: '🔍 Compare prices',
       kayak_link: '✈️ View on KAYAK',
       see_price_note: '💵 Price available on Aviasales, Expedia or KAYAK',
       see_price_note_generic: '💵 Price available on the link below',
@@ -1544,7 +1550,6 @@
         ${link ? `<a class="row-book-link row-btn-book" href="${link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('book_this', { airline: offer.airline })}</a>` : ''}
         ${expediaLink ? `<a class="row-book-link row-btn-expedia" href="${expediaLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('expedia_link')}</a>` : ''}
         ${kayakLink ? `<a class="row-book-link row-btn-kayak" href="${kayakLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('kayak_link')}</a>` : ''}
-        ${(link && expediaLink) ? `<button type="button" class="calendar-btn compare-both-btn" data-link="${link}" data-expedia="${expediaLink}" data-kayak="${kayakLink || ''}" style="margin-top:6px; background:var(--field-bg); color:var(--brand-blue); border:1px solid var(--dash);" onclick="event.stopPropagation()">${t('compare_both')}</button>` : ''}
         <a href="${whatsappLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-whatsapp">${t('share_whatsapp')}</a>
         <a href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="row-book-link row-btn-insurance">${t('insurance_estimate', { low: insuranceLow, high: insuranceHigh })}</a>
       </div>`;
@@ -1647,16 +1652,6 @@
         });
       });
 
-      // "Comparar precios" abre las pestañas (Aviasales, Expedia, y
-      // KAYAK si está disponible) al mismo tiempo, con un solo toque —
-      // más rápido que tocar cada botón por separado.
-      trackResultBox.querySelectorAll('.compare-both-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          window.open(btn.dataset.link, '_blank', 'noopener');
-          window.open(btn.dataset.expedia, '_blank', 'noopener');
-          if (btn.dataset.kayak) window.open(btn.dataset.kayak, '_blank', 'noopener');
-        });
-      });
     } catch (err) {
       trackResultBox.innerHTML = `<div class="calendar-status">⚠️ ${err.message}</div>`;
     } finally {
