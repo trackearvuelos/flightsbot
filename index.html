@@ -784,6 +784,7 @@
       compare_both: '🔍 Comparar precios',
       kayak_link: '✈️ Ver en KAYAK',
       see_price_note: '💵 Precio disponible en Aviasales, Expedia o KAYAK',
+      see_price_note_generic: '💵 Precio disponible en el link de abajo',
       choose_which: 'Elige cuál(es) seguir — {n} aerolínea(s) encontrada(s):',
       live_data_note: '💡 Esta información viene de nuestra fuente de datos en vivo — confirma la aerolínea y el precio final en Aviasales, Expedia o KAYAK antes de pagar.',
       consulting_airlines: 'Consultando todas las aerolíneas disponibles...',
@@ -864,6 +865,7 @@
       compare_both: '🔍 Compare prices',
       kayak_link: '✈️ View on KAYAK',
       see_price_note: '💵 Price available on Aviasales, Expedia or KAYAK',
+      see_price_note_generic: '💵 Price available on the link below',
       choose_which: 'Choose which one(s) to follow — {n} airline(s) found:',
       live_data_note: "💡 This information comes from our live data source — confirm the airline and final price on Aviasales, Expedia or KAYAK before you pay.",
       consulting_airlines: 'Checking all available airlines...',
@@ -1563,11 +1565,12 @@
         return;
       }
 
-      const link = buildAffiliateLink(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers);
-      const linkHtml = link ? `<a class="book-link" href="${link}" target="_blank" rel="noopener">${t('search_btn').includes('Find') ? 'Book' : 'Reservar'}</a><a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ${currentLang === 'en' ? 'Traveling? Get a quote here' : '¿Aseguras tu viaje? Cotiza aquí'}</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? 'Flight delayed/canceled? Claim here' : '¿Vuelo retrasado/cancelado? Reclama aquí'}</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? '(or here too)' : '(o también aquí)'}</a>` : '';
+      const providerLinks = buildProviderLinks(payload.origin, payload.destination, payload.depart_date, payload.return_date, payload.passengers, (providers && providers.length ? providers.join(',') : 'aviasales,expedia,kayak'));
+      const bookLinksHtml = providerLinks.map((p) => `<a class="book-link" href="${p.url}" target="_blank" rel="noopener">✈️ ${currentLang === 'en' ? 'View on' : 'Ver en'} ${p.name}</a>`).join('');
+      const linkHtml = `${bookLinksHtml}<a class="app-install-link" href="${EKTA_INSURANCE_LINK}" target="_blank" rel="noopener">🛡️ ${currentLang === 'en' ? 'Traveling? Get a quote here' : '¿Aseguras tu viaje? Cotiza aquí'}</a><a class="app-install-link" href="${AIRHELP_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? 'Flight delayed/canceled? Claim here' : '¿Vuelo retrasado/cancelado? Reclama aquí'}</a><a class="app-install-link" href="${COMPENSAIR_LINK}" target="_blank" rel="noopener">🧳 ${currentLang === 'en' ? '(or here too)' : '(o también aquí)'}</a>`;
       const paxLabel = paxLabelClient(payload.passengers);
       const offerHtml = data.offer
-        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span></div><div class="calendar-status" style="padding:0; font-size:11px; font-style:italic;">${t('see_price_note')}</div></div>${linkHtml}`
+        ? `<div class="price-row cheapest"><div class="price-row-header"><span>✈️ ${data.offer.airline} (${paxLabel})</span></div><div class="calendar-status" style="padding:0; font-size:11px; font-style:italic;">${t('see_price_note_generic')}</div></div>${linkHtml}`
         : `<div class="calendar-status">${t('no_live_price')}</div>`;
 
       const notifHtml = data.notification_sent
