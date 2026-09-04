@@ -51,16 +51,26 @@
     padding: 16px;
     max-width: 600px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    /* Pista de aeropuerto de fondo, centrada, que se repite verticalmente
-       sin importar qué tan larga sea la página — puro CSS, sin JS. */
-    background-image:
-      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22100%22%20viewBox%3D%220%200%20600%20100%22%3E%20%3Crect%20x%3D%22220%22%20y%3D%220%22%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%2316223A%22%20opacity%3D%220.05%22%2F%3E%20%3Cline%20x1%3D%22220%22%20y1%3D%220%22%20x2%3D%22220%22%20y2%3D%22100%22%20stroke%3D%22%2316223A%22%20stroke-width%3D%222%22%20opacity%3D%220.07%22%2F%3E%20%3Cline%20x1%3D%22380%22%20y1%3D%220%22%20x2%3D%22380%22%20y2%3D%22100%22%20stroke%3D%22%2316223A%22%20stroke-width%3D%222%22%20opacity%3D%220.07%22%2F%3E%20%3Cline%20x1%3D%22300%22%20y1%3D%220%22%20x2%3D%22300%22%20y2%3D%2240%22%20stroke%3D%22%2316223A%22%20stroke-width%3D%226%22%20opacity%3D%220.09%22%2F%3E%20%3C%2Fsvg%3E"),
-      linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
-    background-repeat: repeat-y, no-repeat;
-    background-size: 100% 100px, 100% 100%;
-    background-position: center top, center top;
+    background: linear-gradient(180deg, #F1F6FF 0%, #FFFFFF 420px);
     color: var(--tg-theme-text-color, var(--ink));
     position: relative;
+  }
+  /* Avión de fondo, centrado y fijo en la pantalla (no se mueve al
+     hacer scroll) — vive detrás de todo el contenido. */
+  #bg-plane {
+    display: block;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px;
+    height: 340px;
+    z-index: 0;
+    pointer-events: none;
+  }
+  #bg-plane path {
+    fill: var(--brand-blue);
+    opacity: 0.07;
   }
   /* Medio mundo a cada lado, solo en pantallas anchas donde hay
      espacio vacío junto al contenido (max-width: 480px) — en
@@ -567,6 +577,15 @@
 </head>
 <body>
 
+  <!-- Avión de fondo, centrado y fijo en la pantalla. -->
+  <svg id="bg-plane" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(150,150)">
+      <path d="M0,-140 C10,-140 14,-120 14,-90 L14,60 L40,110 L40,122 L14,110 L14,130 L26,150 L26,158 L0,148 L-26,158 L-26,150 L-14,130 L-14,110 L-40,122 L-40,110 L-14,60 L-14,-90 C-14,-120 -10,-140 0,-140 Z"/>
+      <path d="M-14,-10 L-130,50 L-130,66 L-14,30 Z"/>
+      <path d="M14,-10 L130,50 L130,66 L14,30 Z"/>
+    </g>
+  </svg>
+
   <!-- Medio mundo a cada lado (solo pantallas anchas) — reutiliza los
        mismos datos reales del mapa que ya usamos en "Explora el mundo"
        (ver <script id="world-map-data"> más abajo), recortados a la
@@ -608,9 +627,9 @@
     <a href="notificaciones.html" class="top-service-card">
       <span class="svc-icon">🔔</span><br><span data-i18n="svc_notifications"></span>
     </a>
-    <button type="button" id="my-routes-btn" class="top-service-card">
+    <a href="rutas.html" class="top-service-card">
       <span class="svc-icon">📋</span><br><span data-i18n="svc_my_routes"></span>
-    </button>
+    </a>
   </div>
 
   <div class="swap-row">
@@ -701,9 +720,6 @@
       <button type="button" class="calendar-btn" id="qr-modal-close" data-i18n="close"></button>
     </div>
   </div>
-
-
-  <div class="price-calendar" id="my-routes-box"></div>
 
   <div class="error" id="error-msg"></div>
 
@@ -1660,85 +1676,6 @@
     }
   });
 
-  // --- "Mis rutas guardadas" ---
-  const myRoutesBtn = document.getElementById('my-routes-btn');
-  const myRoutesBox = document.getElementById('my-routes-box');
-
-  myRoutesBtn.addEventListener('click', async () => {
-    clearError();
-    const email = getUserEmail();
-    if (!email) { showError('Escribe un correo válido arriba primero.'); return; }
-    const sessionToken = getValidSessionToken();
-    if (!sessionToken) { promptVerification('Verifica tu correo antes de ver tus rutas guardadas.', () => myRoutesBtn.click()); return; }
-
-    myRoutesBtn.disabled = true;
-    myRoutesBox.classList.add('open');
-    myRoutesBox.innerHTML = '<div class="calendar-status">Consultando tus rutas...</div>';
-
-    try {
-      const resp = await fetch(`${CALENDAR_PROXY_URL}?action=list&email=${encodeURIComponent(email)}&session_token=${encodeURIComponent(sessionToken)}`);
-      const data = await resp.json();
-
-      if (!data.success && data.needs_verification) {
-        myRoutesBox.classList.remove('open');
-        promptVerification('Tu sesión expiró. Verifica tu correo de nuevo.', () => myRoutesBtn.click());
-        return;
-      }
-
-      const routes = data.routes || [];
-
-      if (routes.length === 0) {
-        myRoutesBox.innerHTML = '<div class="calendar-status">No tienes rutas guardadas todavía.</div>';
-        return;
-      }
-
-      let html = '<div class="price-calendar-title">Tus rutas</div>';
-      for (const r of routes) {
-        const tripLabel = r.return_date ? `${r.depart_date} → ${r.return_date}` : `${r.depart_date} (solo ida)`;
-        const paxLabel = r.passengers === 1 ? '1 pasajero' : `${r.passengers} pasajeros`;
-        const airlineLabel = r.preferred_airline ? ` · ${r.preferred_airline}` : '';
-        let checkedLabel = 'Todavía no hemos consultado esta ruta';
-        if (r.last_checked_at) {
-          const checkedDate = new Date(r.last_checked_at).toLocaleDateString('es');
-          checkedLabel = `Última consulta: ${checkedDate} · precio disponible en Aviasales, Expedia o KAYAK`;
-        }
-        const providerLinks = buildProviderLinks(r.origin, r.destination, r.depart_date, r.return_date, r.passengers, r.provider_preference);
-        const providerLinksHtml = providerLinks.map((p) => `<a class="row-book-link ${p.cssClass}" href="${p.url}" target="_blank" rel="noopener">✈️ Ver en ${p.name}</a>`).join('');
-        html += `
-          <div class="price-row">
-            <div class="price-row-header">
-              <span>${r.origin} → ${r.destination}, ${tripLabel} (${paxLabel}${airlineLabel})</span>
-            </div>
-            <div class="calendar-status" style="padding:0; font-size:11px;">${checkedLabel}</div>
-            ${providerLinksHtml}
-            <button type="button" class="channel-option" data-remove-id="${r.id}" style="margin-top:6px; width:100%;">🗑️ Eliminar</button>
-          </div>`;
-      }
-      myRoutesBox.innerHTML = html;
-
-      myRoutesBox.querySelectorAll('[data-remove-id]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const routeId = btn.dataset.removeId;
-          btn.disabled = true;
-          btn.textContent = 'Eliminando...';
-          try {
-            await fetch(`${CALENDAR_PROXY_URL}?action=remove`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email, route_id: routeId, session_token: sessionToken }),
-            });
-            myRoutesBtn.click(); // recargamos la lista
-          } catch (err) {
-            showError('No se pudo eliminar: ' + err.message);
-          }
-        });
-      });
-    } catch (err) {
-      myRoutesBox.innerHTML = `<div class="calendar-status">⚠️ Error de conexión: ${err.message}</div>`;
-    } finally {
-      myRoutesBtn.disabled = false;
-    }
-  });
 
 
   // Ya no usamos tg.MainButton/tg.sendData — el botón propio
