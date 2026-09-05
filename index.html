@@ -553,6 +553,110 @@
     font-size: 14px;
     color: #444444;
   }
+  #chat-fab {
+    position: fixed;
+    bottom: 18px;
+    right: max(18px, calc(50vw - 300px + 18px));
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--brand-blue);
+    color: #fff;
+    border: none;
+    font-size: 22px;
+    box-shadow: 0 4px 14px rgba(29,78,216,0.4);
+    cursor: pointer;
+    z-index: 150;
+  }
+  #chat-panel {
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    bottom: 82px;
+    right: max(18px, calc(50vw - 300px + 18px));
+    width: 320px;
+    max-width: calc(100vw - 36px);
+    height: 420px;
+    max-height: 65vh;
+    background: #fff;
+    border: 1px solid var(--dash);
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    z-index: 150;
+    overflow: hidden;
+  }
+  #chat-panel.open { display: flex; }
+  #chat-header {
+    background: var(--brand-blue);
+    color: #fff;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #chat-header button {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .chat-msg {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+  .chat-msg.user {
+    align-self: flex-end;
+    background: var(--brand-blue);
+    color: #fff;
+    border-bottom-right-radius: 3px;
+  }
+  .chat-msg.assistant {
+    align-self: flex-start;
+    background: var(--field-bg);
+    color: var(--ink);
+    border-bottom-left-radius: 3px;
+  }
+  #chat-input-row {
+    display: flex;
+    gap: 6px;
+    padding: 10px;
+    border-top: 1px solid var(--dash);
+  }
+  #chat-input {
+    flex: 1;
+    padding: 9px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--dash);
+    background: var(--field-bg);
+    font-size: 14px;
+  }
+  #chat-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--brand-blue);
+    color: #fff;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  #chat-send-btn:disabled { opacity: 0.5; }
   .channel-toggle {
     display: flex;
     gap: 8px;
@@ -716,6 +820,21 @@
     </div>
   </div>
 
+  <!-- Asistente de ayuda con IA — solo guía sobre cómo usar el sitio,
+       no busca vuelos reales. -->
+  <button type="button" id="chat-fab" title="Ayuda">💬</button>
+  <div id="chat-panel">
+    <div id="chat-header">
+      <span data-i18n="chat_title"></span>
+      <button type="button" id="chat-close-btn" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-row">
+      <input type="text" id="chat-input" data-i18n-ph="chat_input_ph">
+      <button type="button" id="chat-send-btn">➤</button>
+    </div>
+  </div>
+
   <div class="error" id="error-msg"></div>
 
   <div style="text-align:center; margin-top:30px; padding-top:16px; border-top:1px solid var(--tg-theme-hint-color, #eeeeee); font-size:12px;">
@@ -758,6 +877,10 @@
       map_title: '🗺️ Explora el mundo',
       map_disclaimer: 'Precios aproximados. Actualizamos una vez al día.',
       install_app_link: 'Instala la app',
+      chat_title: '💬 Ayuda',
+      chat_input_ph: 'Pregunta cómo usar el sitio...',
+      chat_greeting: '¡Hola! Soy el asistente de Trackear Vuelos. Pregúntame cómo usar la página — por ejemplo, "¿cómo guardo una ruta?" o "¿dónde veo mis rutas?".',
+      chat_error: '⚠️ El asistente no está disponible en este momento. Intenta de nuevo en un rato.',
       qr_modal_text: '<strong>📱 Lleva Trackear Vuelos contigo</strong><br>Toca y escanea, agrega a tu pantalla de inicio el app, y guarda tus rutas para empezar a recibir alertas.',
       close: 'Cerrar',
       origin_label: 'Origen',
@@ -837,6 +960,10 @@
       map_title: '🗺️ Explore the world',
       map_disclaimer: 'Approximate prices. Updated once a day.',
       install_app_link: 'Install the app',
+      chat_title: '💬 Help',
+      chat_input_ph: 'Ask how to use the site...',
+      chat_greeting: "Hi! I'm the Trackear Vuelos assistant. Ask me how to use the page — for example, \"how do I save a route?\" or \"where do I see my routes?\".",
+      chat_error: '⚠️ The assistant is not available right now. Try again in a bit.',
       qr_modal_text: '<strong>📱 Take Trackear Vuelos with you</strong><br>Scan, add it to your home screen, and save your routes to start getting alerts.',
       close: 'Close',
       origin_label: 'From',
@@ -993,6 +1120,80 @@
   // Ya NO ponemos el token de Travelpayouts aquí — vive seguro en el Worker.
   // Pega aquí la URL de tu Worker desplegado (ver webapp/calendar-proxy-worker.js).
   const CALENDAR_PROXY_URL = "https://flightsprices.duardipr.workers.dev";
+
+  // --- Asistente de ayuda con IA (widget flotante) ---
+  // Solo guía sobre cómo usar el sitio — no busca vuelos reales, todo
+  // eso lo maneja el Worker (donde vive la clave de la API, nunca aquí).
+  (function setupChatWidget() {
+    const fab = document.getElementById('chat-fab');
+    const panel = document.getElementById('chat-panel');
+    const closeBtn = document.getElementById('chat-close-btn');
+    const messagesBox = document.getElementById('chat-messages');
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('chat-send-btn');
+
+    let chatHistory = []; // { role: 'user'|'assistant', content: string }
+    let greeted = false;
+
+    function addMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `chat-msg ${role}`;
+      div.textContent = text;
+      messagesBox.appendChild(div);
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    fab.addEventListener('click', () => {
+      panel.classList.add('open');
+      if (!greeted) {
+        addMessage('assistant', t('chat_greeting'));
+        greeted = true;
+      }
+      input.focus();
+    });
+    closeBtn.addEventListener('click', () => panel.classList.remove('open'));
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendBtn.disabled = true;
+      addMessage('user', text);
+      chatHistory.push({ role: 'user', content: text });
+
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'chat-msg assistant';
+      typingDiv.textContent = '...';
+      messagesBox.appendChild(typingDiv);
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+
+      try {
+        const resp = await fetch(`${CALENDAR_PROXY_URL}?action=chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, history: chatHistory.slice(0, -1) }),
+        });
+        const data = await resp.json();
+        typingDiv.remove();
+        if (data.success) {
+          addMessage('assistant', data.reply);
+          chatHistory.push({ role: 'assistant', content: data.reply });
+        } else {
+          addMessage('assistant', t('chat_error'));
+        }
+      } catch (err) {
+        typingDiv.remove();
+        addMessage('assistant', t('chat_error'));
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  })();
 
   // Travelpayouts manda el código IATA de 2 letras (ej. "AA"), no el
   // nombre completo — esta tabla cubre las aerolíneas más comunes en
