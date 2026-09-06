@@ -84,7 +84,7 @@
   <header>
     <a class="back-link" href="index.html" data-i18n="back"></a>
     <h1 id="page-title" data-i18n="title"></h1>
-    <button type="button" id="lang-switch-btn">🌐 EN</button>
+    <button type="button" id="lang-switch-btn">🇺🇸 EN</button>
   </header>
 
   <div id="tickets-note" data-i18n="tickets_note"></div>
@@ -121,7 +121,7 @@
     document.getElementById('page-title').textContent = t(cameFromTickets ? 'title_tickets' : 'title');
     document.querySelector('a.back-link').textContent = t('back');
     document.getElementById('tickets-note').textContent = t('tickets_note');
-    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🇺🇸 EN' : '🇪🇸 ES';
   }
   if (cameFromTickets) {
     document.getElementById('tickets-note').style.display = 'block';

@@ -555,7 +555,7 @@
   }
   #chat-fab {
     position: fixed;
-    bottom: 18px;
+    bottom: 80px;
     right: max(18px, calc(50vw - 300px - 60px));
     width: 52px;
     height: 52px;
@@ -572,7 +572,7 @@
     display: none;
     flex-direction: column;
     position: fixed;
-    bottom: 82px;
+    bottom: 144px;
     right: max(18px, calc(50vw - 300px + 18px));
     width: 320px;
     max-width: calc(100vw - 36px);
@@ -706,7 +706,7 @@
     </div>
     <div class="brand-name">TRACKEAR VUELOS</div>
     <a href="#" id="install-app-link" data-i18n="install_app_link"></a>
-    <button type="button" id="lang-switch-btn" title="Switch language">🌐 EN</button>
+    <button type="button" id="lang-switch-btn" title="Switch language">🇺🇸 EN</button>
   </div>
 
   <h1 data-i18n-html="h1"></h1>
@@ -1055,7 +1055,7 @@
     document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
       el.placeholder = t(el.dataset.i18nPh);
     });
-    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🇺🇸 EN' : '🇪🇸 ES';
   }
 
   document.getElementById('lang-switch-btn').addEventListener('click', () => {

@@ -51,7 +51,7 @@
 </head>
 <body>
 
-  <button type="button" id="lang-switch-btn">🌐 EN</button>
+  <button type="button" id="lang-switch-btn">🇺🇸 EN</button>
   <a class="back-link" href="index.html" data-i18n="back_link">← Volver al buscador</a>
 
   <h1 data-i18n="h1">Términos y condiciones</h1>
@@ -146,7 +146,7 @@
     document.querySelectorAll('[data-i18n-html]').forEach((el) => {
       el.innerHTML = dict[el.dataset.i18nHtml] || TRANSLATIONS.es[el.dataset.i18nHtml] || '';
     });
-    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🇺🇸 EN' : '🇪🇸 ES';
   }
 
   document.getElementById('lang-switch-btn').addEventListener('click', () => {
