@@ -98,34 +98,25 @@
     es: {
       back: '← Volver',
       title: '🏨 Encuentra dónde quedarte',
-      title_tickets: '🎟️ Entradas y actividades',
-      tickets_note: '🎟️ Toca el filtro arriba del mapa y elige "Experience" para ver tours y actividades.',
+      tickets_note: '🎟️ ¿Buscas tours o actividades? Toca el filtro arriba del mapa y elige "Experience".',
     },
     en: {
       back: '← Back',
       title: '🏨 Find a place to stay',
-      title_tickets: '🎟️ Tickets and activities',
-      tickets_note: '🎟️ Tap the filter above the map and choose "Experience" to see tours and activities.',
+      tickets_note: '🎟️ Looking for tours or activities? Tap the filter above the map and choose "Experience".',
     },
   };
   let currentLang = localStorage.getItem('flightbot_lang') || 'es';
   function t(key) { return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) || TRANSLATIONS.es[key] || key; }
 
-  // Si llegamos desde el botón de "Entradas" (no el de "Hospedajes"),
-  // cambiamos el título y mostramos la nota de ayuda para encontrar
-  // el filtro de actividades dentro del mapa.
-  const cameFromTickets = new URLSearchParams(window.location.search).get('tickets') === '1';
-
   function applyTranslations() {
     document.documentElement.lang = currentLang;
-    document.getElementById('page-title').textContent = t(cameFromTickets ? 'title_tickets' : 'title');
+    document.getElementById('page-title').textContent = t('title');
     document.querySelector('a.back-link').textContent = t('back');
     document.getElementById('tickets-note').textContent = t('tickets_note');
     document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🇺🇸 EN' : '🇪🇸 ES';
   }
-  if (cameFromTickets) {
-    document.getElementById('tickets-note').style.display = 'block';
-  }
+  document.getElementById('tickets-note').style.display = 'block';
   document.getElementById('lang-switch-btn').addEventListener('click', () => {
     currentLang = currentLang === 'es' ? 'en' : 'es';
     localStorage.setItem('flightbot_lang', currentLang);
