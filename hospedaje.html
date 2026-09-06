@@ -48,6 +48,9 @@
     margin: 0;
   }
   #lang-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     background: var(--field-bg, #F4F8FF);
     border: 1px solid var(--dash);
     border-radius: 8px;
@@ -84,7 +87,7 @@
   <header>
     <a class="back-link" href="index.html" data-i18n="back"></a>
     <h1 id="page-title" data-i18n="title"></h1>
-    <button type="button" id="lang-switch-btn">🇺🇸 EN</button>
+    <button type="button" id="lang-switch-btn"><svg width="16" height="11" viewBox="0 0 16 11"><rect width="16" height="11" fill="#B22234"/><rect y="1" width="16" height="1" fill="#fff"/><rect y="3" width="16" height="1" fill="#fff"/><rect y="5" width="16" height="1" fill="#fff"/><rect y="7" width="16" height="1" fill="#fff"/><rect y="9" width="16" height="1" fill="#fff"/><rect width="7" height="6" fill="#3C3B6E"/></svg>EN</button>
   </header>
 
   <div id="tickets-note" data-i18n="tickets_note"></div>
@@ -114,7 +117,9 @@
     document.getElementById('page-title').textContent = t('title');
     document.querySelector('a.back-link').textContent = t('back');
     document.getElementById('tickets-note').textContent = t('tickets_note');
-    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🇺🇸 EN' : '🇪🇸 ES';
+    document.getElementById('lang-switch-btn').innerHTML = currentLang === 'es'
+      ? '<svg width="16" height="11" viewBox="0 0 16 11"><rect width="16" height="11" fill="#B22234"/><rect y="1" width="16" height="1" fill="#fff"/><rect y="3" width="16" height="1" fill="#fff"/><rect y="5" width="16" height="1" fill="#fff"/><rect y="7" width="16" height="1" fill="#fff"/><rect y="9" width="16" height="1" fill="#fff"/><rect width="7" height="6" fill="#3C3B6E"/></svg>EN'
+      : '<svg width="16" height="11" viewBox="0 0 16 11"><rect width="16" height="11" fill="#AA151B"/><rect y="2.75" width="16" height="5.5" fill="#F1BF00"/></svg>ES';
   }
   document.getElementById('tickets-note').style.display = 'block';
   document.getElementById('lang-switch-btn').addEventListener('click', () => {

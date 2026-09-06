@@ -150,7 +150,11 @@
     color: var(--brand-blue);
     cursor: pointer;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
   }
+  #lang-switch-btn svg { flex-shrink: 0; }
   .field {
     margin-bottom: 16px;
     position: relative;
@@ -706,7 +710,7 @@
     </div>
     <div class="brand-name">TRACKEAR VUELOS</div>
     <a href="#" id="install-app-link" data-i18n="install_app_link"></a>
-    <button type="button" id="lang-switch-btn" title="Switch language">🇺🇸 EN</button>
+    <button type="button" id="lang-switch-btn" title="Switch language"><svg width="16" height="11" viewBox="0 0 16 11"><rect width="16" height="11" fill="#B22234"/><rect y="1" width="16" height="1" fill="#fff"/><rect y="3" width="16" height="1" fill="#fff"/><rect y="5" width="16" height="1" fill="#fff"/><rect y="7" width="16" height="1" fill="#fff"/><rect y="9" width="16" height="1" fill="#fff"/><rect width="7" height="6" fill="#3C3B6E"/></svg>EN</button>
   </div>
 
   <h1 data-i18n-html="h1"></h1>
@@ -733,6 +737,9 @@
     </a>
     <a href="rutas.html" class="top-service-card">
       <span class="svc-icon">📋</span><br><span data-i18n="svc_my_routes"></span>
+    </a>
+    <a href="productos.html" class="top-service-card">
+      <span class="svc-icon">🧳</span><br><span data-i18n="svc_products"></span>
     </a>
   </div>
 
@@ -837,8 +844,6 @@
 
   <div class="error" id="error-msg"></div>
 
-  <a href="productos.html" class="book-link" style="display:block; margin-top:20px; margin-bottom:20px;" data-i18n="products_link"></a>
-
   <div style="text-align:center; margin-top:30px; padding-top:16px; border-top:1px solid var(--tg-theme-hint-color, #eeeeee); font-size:12px;">
     <a href="acerca.html" style="color:var(--tg-theme-hint-color, #666666); text-decoration:none; margin:0 8px;" data-i18n="footer_about"></a>
     ·
@@ -876,7 +881,7 @@
       svc_stays: 'Hospedajes',
       svc_notifications: 'Notificaciones',
       svc_my_routes: 'Mis rutas',
-      products_link: '🧳 Ver esenciales para tu viaje →',
+      svc_products: 'Esenciales',
       map_title: '🗺️ Explora el mundo',
       map_disclaimer: 'Precios aproximados. Actualizamos una vez al día.',
       install_app_link: 'Instala la app',
@@ -960,7 +965,7 @@
       svc_stays: 'Stays',
       svc_notifications: 'Notifications',
       svc_my_routes: 'My routes',
-      products_link: '🧳 See trip essentials →',
+      svc_products: 'Essentials',
       map_title: '🗺️ Explore the world',
       map_disclaimer: 'Approximate prices. Updated once a day.',
       install_app_link: 'Install the app',
@@ -1059,7 +1064,9 @@
     document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
       el.placeholder = t(el.dataset.i18nPh);
     });
-    document.getElementById('lang-switch-btn').textContent = currentLang === 'es' ? '🇺🇸 EN' : '🇪🇸 ES';
+    document.getElementById('lang-switch-btn').innerHTML = currentLang === 'es'
+      ? '<svg width="16" height="11" viewBox="0 0 16 11"><rect width="16" height="11" fill="#B22234"/><rect y="1" width="16" height="1" fill="#fff"/><rect y="3" width="16" height="1" fill="#fff"/><rect y="5" width="16" height="1" fill="#fff"/><rect y="7" width="16" height="1" fill="#fff"/><rect y="9" width="16" height="1" fill="#fff"/><rect width="7" height="6" fill="#3C3B6E"/></svg>EN'
+      : '<svg width="16" height="11" viewBox="0 0 16 11"><rect width="16" height="11" fill="#AA151B"/><rect y="2.75" width="16" height="5.5" fill="#F1BF00"/></svg>ES';
   }
 
   document.getElementById('lang-switch-btn').addEventListener('click', () => {
